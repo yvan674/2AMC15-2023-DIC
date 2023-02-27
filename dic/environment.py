@@ -1,3 +1,9 @@
+"""Environment.
+
+We define the grid environment for DIC in this file.
+"""
+
+
 import random
 from pathlib import Path
 import ast
@@ -9,8 +15,8 @@ import numpy as np
 
 
 class Environment(gym.Env):
-    def __init__(self, grid: Path, n_agents: int = 1,
-                 agent_start_pos: list[tuple[int, int]] = None):
+    def __init__(self, grid: Path, headless: bool, n_agents: int = 1,
+                 agent_start_pos: list[tuple[int, int]] = None,):
         """Creates the grid environment for the robot vacuum.
 
         Creates a Grid environment from the provided grid file. The number of
