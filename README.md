@@ -2,7 +2,6 @@
 Code for the 2023 Data Intelligence Challenge Course
 
 ## Requirements
-- Python >= 3.11
-- Gymnasium 
-- Numpy
-- ast
+- python >= 3.11
+- gymnasium >= 0.27 
+- numpy >= 1.21
