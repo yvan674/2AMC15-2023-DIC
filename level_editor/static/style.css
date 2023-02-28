@@ -1,0 +1,120 @@
+.container {
+    display: block;
+    grid-row: 1;
+}
+
+.grid {
+    display: grid;
+    grid-gap: 2px;
+    border: 2px solid lightgray;
+    background: lightgray;
+}
+
+.cell_wall {
+    /* center the cell content */
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    font-family: Arial, serif;
+    font-size: 10px;
+    font-weight: bold;
+    background: #bd5858;
+}
+
+.cell_obstacle {
+    /* center the cell content */
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    font-family: Arial, serif;
+    font-size: 10px;
+    font-weight: bold;
+    background: #393939;
+}
+
+/*.cell_dirty {*/
+/*    !* center the cell content *!*/
+/*    justify-content: center;*/
+/*    align-items: center;*/
+/*    display: flex;*/
+/*    font-family: Arial, serif;*/
+/*    font-size: 10px;*/
+/*    font-weight: bold;*/
+/*    background: slategray;*/
+/*}*/
+
+.cell_empty {
+    /* center the cell content */
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    font-family: Arial, serif;
+    font-size: 10px;
+    font-weight: bold;
+    background: white;
+}
+
+.cell_dirt {
+    /* center the cell content */
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    font-family: Arial, serif;
+    font-size: 10px;
+    font-weight: bold;
+    background: #ff7700;
+}
+
+.cell_charger {
+        /* center the cell content */
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    font-family: Arial, serif;
+    font-size: 10px;
+    font-weight: bold;
+    background: forestgreen;
+    /*background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' preserveAspectRatio='none' viewBox='0 0 100 100'><path d='M100 0 L0 100 ' stroke='black' stroke-width='1'/><path d='M0 0 L100 100 ' stroke='black' stroke-width='1'/></svg>");*/
+    /*background-repeat: no-repeat;*/
+    /*background-position: center center;*/
+    /*background-size: 100% 100%, auto;*/
+    /*background-color: #ff0000;*/
+}
+
+.cell_selected {
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    font-family: Arial, serif;
+    font-size: 10px;
+    font-weight: bold;
+    border-style: solid;
+    border-bottom-width: medium;
+    border-bottom-color: black;
+    background: white;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #333;
+}
+
+li {
+  float: left;
+}
+
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* Change the link color to #111 (black) on hover */
+li a:hover {
+  background-color: #111;
+}

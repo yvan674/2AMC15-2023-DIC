@@ -1,0 +1,12 @@
+{% macro tile(x, y, room_config) -%}
+    <div class="{{ materials[room_config[x][y]] }}" id="({{ x }},{{ y }})" onclick="tile_click('{{ x }}', '{{ y }}')"></div>
+{%- endmacro %}
+
+<div class="grid"
+     style="grid-template-columns: repeat({{ n_cols }}, {{ height }}px);grid-template-rows: repeat({{ n_rows }}, {{ width }}px);">
+    {% for y in range(n_rows) %}
+        {% for x in range(n_cols) %}
+            {{ tile(x, y, room_config) }}
+        {% endfor %}
+    {% endfor %}
+</div>

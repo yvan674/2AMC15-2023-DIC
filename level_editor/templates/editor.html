@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}">
+</head>
+<body>
+<label for="height">Grid height</label>
+<input type="number" id="height" name="height" value="5" min="5" onchange="render_grid()">
+<label for="width">Grid width</label>
+<input type="number" id="width" name="width" value="5" min="5" onchange="render_grid()">
+<label for="draw">Choose type of tile to draw</label>
+<select name="draw" id="draw">
+    <option value="obstacle">obstacle</option>
+    <option value="dirt">dirt</option>
+    <option value="charger">charger</option>
+</select>
+<label for="grid_name">Grid name</label>
+<input type="text" id="grid_name" name="name">
+<button onclick="save_grid()">Save grid</button>
+<div class="container" id="grid_container"></div>
+</body>
+<script>
+    function render_grid(save = false, name = '') {
+        let obstacles = document.getElementsByClassName("cell_obstacle");
+        let ob_coords = Array();
+        for (let i = 0; i < obstacles.length; i++) {
+            ob_coords.push(obstacles[i].id);
+        }
+        let goals = document.getElementsByClassName("cell_dirt");
+        let d_coords = Array();
+        for (let i = 0; i < goals.length; i++) {
+            d_coords.push(goals[i].id);
+        }
+        let chargers = document.getElementsByClassName("cell_charger");
+        let c_coords = Array();
+        for (let i = 0; i < chargers.length; i++) {
+            c_coords.push(chargers[i].id);
+        }
+        let height = document.getElementById('height').value;
+        let width = document.getElementById('width').value;
+        $.ajax({
+            url: '/build_grid',
+            type: 'GET',
+            data: {
+                height: height,
+                width: width,
+                obstacles: '[' + ob_coords.join(',') + ']',
+                goals: '[' + d_coords.join(',') + ']',
+                chargers: '[' + c_coords.join(',') + ']',
+                save: save,
+                name: name
+            },
+            success: function (data) {
+                document.getElementById('grid_container').innerHTML = data['grid'];
+                if ((save === true) && (data['success'] === 'true')) {
+                    alert('Grid saved!');
+                }
+            }
+        });
+    }
+
+    function tile_click(x, y) {
+        let tile = document.getElementById("(" + x + "," + y + ")");
+        let type = document.getElementById('draw').value;
+        if ((tile.className === 'cell_obstacle')
+            || (tile.className === 'cell_dirt')
+            || (tile.className === 'cell_charger')) {
+            // If there's already something on the tile AND it was one of the placeable tile types, make it empty again.
+            tile.className = 'cell_empty';
+        } else if (tile.className === 'cell_empty') {
+            // If it is empty, place something based on the type chosen.
+            if (type === 'obstacle') {
+                tile.className = 'cell_obstacle'
+            } else if (type === 'dirt') {
+                tile.className = 'cell_dirt'
+            } else if (type === 'charger') {
+                tile.className = 'cell_charger'
+            }
+        }
+    }
+
+    function save_grid() {
+        name = document.getElementById('grid_name').value;
+        if (name) {
+            render_grid(save = true, name = name);
+        } else {
+            alert('Please insert a name first!');
+        }
+    }
+
+    render_grid();
+</script>
+</html>
