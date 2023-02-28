@@ -9,7 +9,7 @@ This script generates 5 grids, each with 5 rooms.
 import numpy as np
 import pickle
 
-from dic.grid import Grid
+from dic import Grid
 from level_editor import GRID_CONFIGS_FP
 
 

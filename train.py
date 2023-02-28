@@ -35,16 +35,25 @@ def main(grid_paths: list[Path], headless: bool, iters: int, out: Path):
     """Main loop of the program."""
 
     for grid in grid_paths:
+        # Set up the environment and reset it to its initial state
         env = Environment(grid, headless, n_agents=1, agent_start_pos=None)
         obs, info = env.reset()
+
+        # Set up the agents from scratch for every grid
         agents = [NullAgent(),
                   GreedyAgent(env.action_space),
                   RandomAgent(env.action_space)]
+
+        # Iterate through each agent for `iters` iterations
         for agent in agents:
             for _ in trange(iters):
+                # Agent takes an action based on the latest observation and info
                 action = agent.take_action(obs, info)
+
+                # The action is performed in the environment
                 obs, reward, terminated, truncated, info = env.step([action])
 
+                # If the agent is terminated, we reset th env.
                 if terminated:
                     obs, info = env.reset()
 

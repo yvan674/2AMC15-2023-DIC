@@ -2,6 +2,9 @@
 
 Grid specifically for the level editor. Credit to Tom v. Meer for writing this.
 """
+import pickle
+from pathlib import Path
+
 import numpy as np
 
 
@@ -22,6 +25,7 @@ class Grid:
         """
         self.n_rows = n_rows
         self.n_cols = n_cols
+
         # Building the boundary of the grid:
         self.cells = np.zeros((n_cols, n_rows), dtype=np.int8)
         self.cells[0, :] = self.cells[-1, :] = 1
@@ -45,19 +49,28 @@ class Grid:
         self.cells[x0:x1, y0:y1] = 2
 
     def place_single_obstacle(self, x, y):
+        """Places a single obstacle marker on the grid."""
         self.cells[x][y] = 2
 
     def place_single_dirt(self, x, y):
+        """Places a single dirt marker on the grid."""
         self.cells[x][y] = 3
 
     def place_single_charger(self, x, y):
+        """Places a single charger marker on the grid."""
         self.cells[x][y] = 4
 
+    def sum_dirt(self):
+        """Counts the number of dirt particles in the grid."""
+        return np.sum(self.cells == 3)
 
-def generate_grid(n_cols, n_rows):
-    # Placeholder function used to generate a grid.
-    # Select an empty grid file in the user interface and add code here to
-    # automatically fill it.
-    # Look at grid_generator.py for inspiration.
-    grid = Grid(n_cols, n_rows)
+    def remove_dirt(self, x, y):
+        """Removes dirt at x, y location on the grid."""
+        self.cells[x][y] = 0
+
+
+def load_grid_file(fp: Path) -> Grid:
+    """Loads a `.grid` file."""
+    with open(fp, "rb") as f:
+        grid = pickle.load(f)
     return grid
