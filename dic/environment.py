@@ -16,7 +16,8 @@ class Environment:
                  headless: bool = False,
                  n_agents: int = 1,
                  agent_start_pos: list[tuple[int, int]] = None,
-                 reward_fn: callable = None):
+                 reward_fn: callable = None,
+                 target_fps: int = 30):
         """Creates the grid environment for the robot vacuum.
 
         Creates a Grid environment from the provided grid file. The number of
@@ -37,6 +38,11 @@ class Environment:
             reward_fn: Custom reward function to use. It should have a
                 signature of func(grid: Grid, info: dict) -> float. See the
                 default reward function in this class for an example.
+            target_fps: How fast the simulation should run if it is being shown
+                in a GUI. This is a target, not the actual speed. If in
+                headless mode, then the simulation will run as fast as
+                possible. We may set a low FPS so we can actually see what's
+                happening.
         """
         if not grid_fp.exists():
             raise FileNotFoundError(f"Grid {grid_fp} does not exist.")
@@ -46,6 +52,7 @@ class Environment:
         # Set up the environment as a blank state.
         self.grid = None
         self.headless = headless
+        self.target_fps = target_fps
 
         # Set up initial agent positions
         self.n_agents = n_agents                 # Number of active agents
@@ -154,6 +161,8 @@ class Environment:
                     self.agent_start_pos = v
                 case "headless":
                     self.headless = v
+                case "target_fps":
+                    self.target_fps = v
                 case _:
                     raise ValueError(f"{k} is not one of the possible "
                                      f"keyword arguments.")
