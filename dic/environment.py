@@ -4,7 +4,7 @@ We define the grid environment for DIC in this file.
 """
 import random
 from pathlib import Path
-from warnings import warn
+from copy import deepcopy
 
 import numpy as np
 
@@ -32,8 +32,8 @@ class Environment:
             grid_fp: Path to the grid file to use.
             n_agents: The number of agents this environment should support.
             agent_start_pos: List of tuples of where each agent should start.
-                If None is provided, then a random start position for each agent
-                is used.
+                If None is provided, then a random start position for each
+                agent is used.
             reward_fn: Custom reward function to use. It should have a
                 signature of func(grid: Grid, info: dict) -> float. See the
                 default reward function in this class for an example.
@@ -51,6 +51,8 @@ class Environment:
         self.n_agents = n_agents                 # Number of active agents
         self.agent_pos = None                    # Current agent positions
         self.agent_start_pos = agent_start_pos   # Where agents initially start
+        self.agent_done = [False] * n_agents
+
 
         if reward_fn is None:
             self.reward_fn = self._default_reward_function
@@ -72,18 +74,19 @@ class Environment:
         For example, if agent 0 moved, agent 1 failed to move, and agent 2
         moved, then agent_moved = [True, False, True].
 
-        Same thing for agent_done. agent_done is True once the agent has
-        moved to the charger.
+        Same thing for agent_charging. agent_charging is True if the agent
+        moved to the charger this turn
 
-        Similarly, the index of dirt_cleaned is the number of dirt tiles cleaned
-        by the agent at that index. If agent 0 cleaned 1 dirt tile, agent 1
-        cleaned 0 dirt tiles, and agent 2 cleaned 0 dirt tiles, then
+        Similarly, the index of dirt_cleaned is the number of dirt tiles
+        cleaned by the agent at that index. If agent 0 cleaned 1 dirt tile,
+        agent 1 cleaned 0 dirt tiles, and agent 2 cleaned 0 dirt tiles, then
         dirt_cleaned would be [1, 0, 0]
 
         """
         return {"dirt_cleaned": [0] * self.n_agents,
                 "agent_moved": [False] * self.n_agents,
-                "agent_done": [False] * self.n_agents}
+                "agent_charging": [False] * self.n_agents}
+
 
 
     def _initialize_agent_pos(self):
@@ -106,48 +109,17 @@ class Environment:
                     raise ValueError(
                         "Attempted to place agent on top of wall or "
                         "charger")
-            self.agent_pos = np.array(self.agent_start_pos)
+            self.agent_pos = deepcopy(self.agent_start_pos)
         else:
             # No positions were given. We place agents randomly.
+            print("No initial agent positions given. Randomly placing agents "
+                  "on the grid.")
             for i in range(self.n_agents):
                 # First get all empty positions
                 zeros = np.where(self.grid.cells == 0)
                 idx = random.randint(0, len(zeros[0]))
                 agent_pos.append((zeros[0][idx], zeros[1][idx]))
-            self.agent_pos = np.array(agent_pos)
-
-    # @staticmethod
-    # def _read_grid(file_name: Path) -> [np.ndarray, int]:
-    #     """Opens and parses the grid text file."""
-    #     with open(file_name) as f:
-    #         lines = f.readlines()
-    #     if len(lines) != 4:
-    #         warn("a grid file should containt 4 lines (size, obstacles, goals, "
-    #              "charger). The current file contains more lines, but there "
-    #              "will be continued as if it is correct.")
-    #     size = lines[0].strip('size = ')
-    #     size = ast.literal_eval(size.strip('\n'))
-    #     grid = np.zeros(size)
-    #
-    #     obstacles = lines[1].strip('obstacles = ')
-    #     obstacles = ast.literal_eval(obstacles.strip('\n'))
-    #     for x1, y1, x2, y2 in obstacles:
-    #         for i in range(x1, x2 + 1):
-    #             for j in range(y1, y2 + 1):
-    #                 grid[i, j] = -1
-    #
-    #     goals = lines[2].strip('goals = ')
-    #     goals = ast.literal_eval(goals.strip('\n'))
-    #     for x, y in goals:
-    #         grid[x, y] = 1
-    #     num_goals = len(goals)
-    #
-    #     charger = lines[3].strip('charger = ')
-    #     charger = ast.literal_eval(charger.strip('\n'))
-    #     for x, y in charger:
-    #         grid[x, y] = 3
-    #
-    #     return grid, num_goals
+            self.agent_pos = agent_pos
 
     def reset(self, **kwargs) -> [np.ndarray, dict]:
         """Reset the environment to an initial state.
@@ -199,6 +171,38 @@ class Environment:
         self.environment_ready = True
         return self.grid.cells, self.info
 
+    def _move_agent(self, new_pos: tuple[int, int], agent_id: int):
+        """Moves the agent, if possible.
+
+        Args:
+            new_pos: The new position of the agent.
+            agent_id: The id of the agent. This is its index in the list of
+                agent positions.
+        """
+        match self.grid.cells[new_pos]:
+            case 0:  # Moved to an empty tile
+                self.agent_pos[agent_id] = new_pos
+                self.info["agent_moved"][agent_id] = True
+            case 1 | 2:  # Moved to a wall or obstacle
+                pass
+            case 3:  # Moved to a dirt tile
+                self.agent_pos[agent_id] = new_pos
+                self.grid.cells[new_pos] = 0
+                self.info["dirt_cleaned"][agent_id] += 1
+                self.info["agent_moved"][agent_id] = True
+            case 4:  # Moved to the charger
+                # Moving to charger is only permitted if the room is clean.
+                # NOTE: This is a pending design decision.
+                if self.grid.sum_dirt() == 0:
+                    self.agent_pos[agent_id] = new_pos
+                    self.agent_done[agent_id] = True
+                    self.info["agent_charging"][agent_id] = True
+                # Otherwise, the agent can't move and nothing happens
+            case _:
+                raise ValueError(f"Grid is badly formed. It has a value of "
+                                 f"{self.grid.cells[new_pos]} at position "
+                                 f"{new_pos}.")
+
     def step(self, actions: list[int]):
         """This function makes the agent take a step on the grid.
 
@@ -217,73 +221,66 @@ class Environment:
         Returns:
 
         """
+        # Verify that the number of actions and the number of agents is the
+        # same
+        if len(actions) != self.n_agents:
+            raise ValueError(f"Number of actions provided is {len(actions)}, "
+                             f"but the number of agents is {self.n_agents}.")
+
         self.info = self._reset_info()
 
-        def verify_agent_movement(new_pos: tuple) -> bool:
-            """Verifies if a move is legal/possible."""
-            grid_val = self.grid[new_pos]
-            if grid_val == -1:
-                # This would move us into a wall. Cancel the move.
-                return False
-            elif grid_val == 3 and self.n_goals != 0:
-                # We can't finish before collecting all goalse
-                return False
-            else:
-                return True
+        max_x = self.grid.n_cols - 1
+        max_y = self.grid.n_rows - 1
 
-        # calculate the new positions of the agents
-        for i in range(self.n_agents):
-            if actions[i] == 0:  # Move down
-                new_pos = self.agent_pos[i, 0] - 1, self.agent_pos[i, 1]
-                if verify_agent_movement(new_pos):
-                    self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]] = 0
-                    self.agent_pos[i, 0] = max(0, self.agent_pos[i, 0] - 1)
-                else:
-                    continue
-            elif actions[i] == 1:  # Move up
-                new_pos = self.agent_pos[i, 0] + 1, self.agent_pos[i, 1]
-                if verify_agent_movement(new_pos):
-                    self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]] = 0
-                    self.agent_pos[i, 0] = min(9, self.agent_pos[i, 0] + 1)
-                else:
-                    continue
-            elif actions[i] == 2:  # Move left
-                new_pos = self.agent_pos[i, 0], self.agent_pos[i, 1] - 1
-                if verify_agent_movement(new_pos):
-                    self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]] = 0
-                    self.agent_pos[i, 1] = max(0, self.agent_pos[i, 1] - 1)
-                else:
-                    continue
-            elif actions[i] == 3:  # Move right
-                new_pos = self.agent_pos[i, 0], self.agent_pos[i, 1] + 1
-                if verify_agent_movement(new_pos):
-                    self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]] = 0
-                    self.agent_pos[i, 1] = min(9, self.agent_pos[i, 1] + 1)
-                else:
-                    continue
-            elif actions[i] == 4:  # Stand still
+        for i, action in enumerate(actions):
+            if self.agent_done[i]:
+                # The agent is already on the charger, so it is done.
                 continue
+            match action:
+                case 0:  # Move down
+                    new_pos = (self.agent_pos[i, 0],
+                               min(max_y, self.agent_pos[i, 1] + 1))
+                case 1:  # Move up
+                    new_pos = (self.agent_pos[i, 0],
+                               max(0, self.agent_pos[i, 1] - 1))
+                    pass
+                case 2:  # Move left
+                    new_pos = (max(0, self.agent_pos[i, 0] - 1),
+                               self.agent_pos[i, 1])
+                    pass
+                case 3:  # Move right
+                    new_pos = (min(max_x, self.agent_pos[i, 0] + 1),
+                               self.agent_pos[i, 1])
+                    pass
+                case 4:  # Stand still
+                    new_pos = (self.agent_pos[i, 0],
+                               self.agent_pos[i, 1])
+                case _:
+                    raise ValueError(f"Provided action {action} for agent {i} "
+                                     f"is not one of the possible actions.")
+            self._move_agent(new_pos, i)
 
         # Update the grid with the new agent positions and calculate the reward
-        reward = 0
-        delbots = []
-        for i in range(self.n_agents):
-            r = self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]]
-            reward += r
-            if r == 1:
-                self.n_goals -= 1
-            elif r == 3 and self.n_goals == 0:
-                delbots.append(i)
-                continue
-            self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]] = 2
+        reward = self.reward_fn(self.grid, self.info)
+        terminal_state = sum(self.agent_done) == self.n_agents
+        # delbots = []
+        # for i in range(self.n_agents):
+        #     r = self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]]
+        #     reward += r
+        #     if r == 1:
+        #         self.n_goals -= 1
+        #     elif r == 3 and self.n_goals == 0:
+        #         delbots.append(i)
+        #         continue
+        #     self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]] = 2
+        #
+        # for i in delbots:  # if any
+        #     self.n_agents -= 1
+        #     if self.n_agents == 0:  # TERMINAL STATE
+        #         return self.grid, reward, True, {}
+        #     self.agent_pos = np.delete(self.agent_pos, i, 0)
 
-        for i in delbots:  # if any
-            self.n_agents -= 1
-            if self.n_agents == 0:  # TERMINAL STATE
-                return self.grid, reward, True, {}
-            self.agent_pos = np.delete(self.agent_pos, i, 0)
-
-        return self.grid.cells, reward, False, self.info
+        return self.grid.cells, reward, terminal_state, self.info
 
     @staticmethod
     def _default_reward_function(grid: Grid, info: dict) -> float:
@@ -296,9 +293,6 @@ class Environment:
         return float(sum(info["dirt_cleaned"]))
 
     def render(self):
-        raise NotImplementedError
-
-    def close(self):
         raise NotImplementedError
 
 
