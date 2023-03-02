@@ -25,7 +25,7 @@ def draw_grid(grid):
                  1: 'cell_wall',
                  2: 'cell_obstacle',
                  3: 'cell_dirt',
-                 4: 'cell_goal'}
+                 4: 'cell_charger'}
     return {'grid': render_template('grid.html',
                                     height=30, width=30,
                                     n_rows=grid.n_rows, n_cols=grid.n_cols,
