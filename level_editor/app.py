@@ -6,7 +6,7 @@ array. Credit to Tom v. Meer for writing this up.
 import pickle
 import ast
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 
 from dic import Grid
