@@ -41,16 +41,19 @@ def home():
 
 @app.route('/build_grid')
 def build_grid():
-    """Main route for building a grid. Given a request with the following parameters, a grid
-     and accompanying statistics are being constructed.
-     Request params:
-     height: number of rows in the grid.
-     width: number of columns in the grid.
-     obstacles: a list of tuples (x,y) of obstacle locations.
-     goals: a list of tuples (x,y) of goal locations.
-     deaths: a list of tuples (x,y) of death-tile locations.
-     save: boolean (true, false) to save the current grid to a file.
-     name: filename to save the current grid to.
+    """Main route for building a grid.
+
+    Given a request with the following parameters, a grid and accompanying
+    statistics are being constructed.
+
+    Request params:
+        height: number of rows in the grid.
+        width: number of columns in the grid.
+        obstacles: a list of tuples (x,y) of obstacle locations.
+        goals: a list of tuples (x,y) of goal locations.
+        deaths: a list of tuples (x,y) of death-tile locations.
+        save: boolean (true, false) to save the current grid to a file.
+        name: filename to save the current grid to.
      """
     n_rows = int(request.args.get('height'))
     n_cols = int(request.args.get('width'))
@@ -69,9 +72,11 @@ def build_grid():
 
     drawn_grid = draw_grid(grid)
     if to_save and len(name) > 0:
-        with open(GRID_CONFIGS_FP / f"{name}.grid", "wb") as f:
+        save_fp = GRID_CONFIGS_FP / f"{name}.grid"
+        with open(save_fp, "wb") as f:
             pickle.dump(grid, f)
         drawn_grid["success"] = "true"
+        drawn_grid["save_fp"] = str(save_fp)
 
     return drawn_grid
 

@@ -56,7 +56,7 @@
             success: function (data) {
                 document.getElementById('grid_container').innerHTML = data['grid'];
                 if ((save === true) && (data['success'] === 'true')) {
-                    alert('Grid saved!');
+                    alert(`Grid saved! File was saved to ${data['save_fp']}`);
                 }
             }
         });
