@@ -358,7 +358,7 @@ if __name__ == '__main__':
     obs, inf = env.reset()
 
     from agents.random_agent import RandomAgent
-    agent = RandomAgent()
+    agent = RandomAgent(0)
 
     for i in trange(1000):
         action = [agent.take_action(obs, inf)]
@@ -372,4 +372,3 @@ if __name__ == '__main__':
         obs, reward, terminal_state, inf = env.step(action)
         if terminal_state:
             break
-

@@ -192,8 +192,8 @@ class EnvironmentGUI:
         # Calculate grid offset
         grid_width = self.scalar * grid_cells.shape[0]
         grid_height = self.scalar * grid_cells.shape[1]
-        x_offset = ((self.grid_panel_size[0] / 2) - (grid_width / 2))
-        y_offset = ((self.grid_panel_size[1] / 2) - (grid_height / 2))
+        x_offset = (self.grid_panel_size[0] / 2) - (grid_width / 2)
+        y_offset = (self.grid_panel_size[1] / 2) - (grid_height / 2)
 
         # Draw the background for the info panel
         background.fill((238, 241, 240), self.info_panel_rect)
