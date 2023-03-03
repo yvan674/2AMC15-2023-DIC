@@ -3,12 +3,16 @@
 We define the grid environment for DIC in this file.
 """
 import random
-from pathlib import Path
+from time import time, sleep
 from copy import deepcopy
+from pathlib import Path
+from warnings import warn
 
 import numpy as np
+from tqdm import trange
 
 from dic import Grid, load_grid_file
+from dic import EnvironmentGUI
 
 
 class Environment:
@@ -42,7 +46,7 @@ class Environment:
                 in a GUI. This is a target, not the actual speed. If in
                 headless mode, then the simulation will run as fast as
                 possible. We may set a low FPS so we can actually see what's
-                happening.
+                happening. Set to 0 or less to unlock FPS.
         """
         if not grid_fp.exists():
             raise FileNotFoundError(f"Grid {grid_fp} does not exist.")
@@ -52,7 +56,11 @@ class Environment:
         # Set up the environment as a blank state.
         self.grid = None
         self.headless = headless
-        self.target_fps = target_fps
+        if target_fps <= 0:
+            self.target_spf = 0.
+        else:
+            self.target_spf = 1. / target_fps
+        self.gui = None
 
         # Set up initial agent positions
         self.n_agents = n_agents                 # Number of active agents
@@ -60,15 +68,16 @@ class Environment:
         self.agent_start_pos = agent_start_pos   # Where agents initially start
         self.agent_done = [False] * n_agents
 
-
+        # Set up reward function
         if reward_fn is None:
+            warn("No reward function provided. Using default reward.")
             self.reward_fn = self._default_reward_function
         else:
             self.reward_fn = reward_fn
-
         self.info = self._reset_info()
-
         self.environment_ready = False
+        self.reset()
+
 
     def _reset_info(self):
         """Resets the info dictionary.
@@ -88,13 +97,11 @@ class Environment:
         cleaned by the agent at that index. If agent 0 cleaned 1 dirt tile,
         agent 1 cleaned 0 dirt tiles, and agent 2 cleaned 0 dirt tiles, then
         dirt_cleaned would be [1, 0, 0]
-
         """
         return {"dirt_cleaned": [0] * self.n_agents,
                 "agent_moved": [False] * self.n_agents,
-                "agent_charging": [False] * self.n_agents}
-
-
+                "agent_charging": self.agent_done,
+                "agent_pos": self.agent_pos}
 
     def _initialize_agent_pos(self):
         """Initializes agent position from the givin initial variables.
@@ -119,14 +126,25 @@ class Environment:
             self.agent_pos = deepcopy(self.agent_start_pos)
         else:
             # No positions were given. We place agents randomly.
-            print("No initial agent positions given. Randomly placing agents "
-                  "on the grid.")
-            for i in range(self.n_agents):
+            warn("No initial agent positions given. Randomly placing agents "
+                 "on the grid.")
+            for _ in range(self.n_agents):
                 # First get all empty positions
                 zeros = np.where(self.grid.cells == 0)
-                idx = random.randint(0, len(zeros[0]))
+                idx = random.randint(0, len(zeros[0]) - 1)
                 agent_pos.append((zeros[0][idx], zeros[1][idx]))
             self.agent_pos = agent_pos
+
+    def get_observation(self) -> [np.ndarray, dict]:
+        """Gets the current observation and information.
+
+        Returns:
+            - observation as an np.ndarray
+            - info as a dict with keys ['dirt_cleaned', 'agent_moved',
+              'agent_charging', 'agent_pos']
+        """
+        return self.grid.cells, self.info
+
 
     def reset(self, **kwargs) -> [np.ndarray, dict]:
         """Reset the environment to an initial state.
@@ -138,8 +156,8 @@ class Environment:
         Example:
         >>> fp = Path("../grid_configs/base-room-1.grid")
         >>> e = Environment(fp, False, 1, None)
-        >>> # Do initial reset to initialize the environment
-        >>> observation, env_info = e.reset()
+        >>> # Get the initial observation
+        >>> observation, env_info = e.get_observation()
         >>> # Reset the environment, but for this training episode, we want
         >>> # to use 2 agents.
         >>> observation, env_info = e.reset(n_agents=2)
@@ -162,7 +180,7 @@ class Environment:
                 case "headless":
                     self.headless = v
                 case "target_fps":
-                    self.target_fps = v
+                    self.target_spf = 1. / v
                 case _:
                     raise ValueError(f"{k} is not one of the possible "
                                      f"keyword arguments.")
@@ -176,6 +194,12 @@ class Environment:
         self.grid = load_grid_file(self.grid_fp)
         self._initialize_agent_pos()
         self.info = self._reset_info()
+        if not self.headless:
+            self.gui = EnvironmentGUI(self.grid.cells.shape)
+            self.gui.reset()
+        else:
+            if self.gui is not None:
+                self.gui.close()
 
         self.environment_ready = True
         return self.grid.cells, self.info
@@ -212,7 +236,7 @@ class Environment:
                                  f"{self.grid.cells[new_pos]} at position "
                                  f"{new_pos}.")
 
-    def step(self, actions: list[int]):
+    def step(self, actions: list[int]) -> [np.ndarray, float, bool, dict]:
         """This function makes the agent take a step on the grid.
 
         Actions are provided as a list of integers. The integer values are:
@@ -228,8 +252,16 @@ class Environment:
                 which action.
 
         Returns:
-
+            0) Current grid cells,
+            1) The reward for the agent,
+            2) If the terminal state has been reached, and
+            3) State information.
         """
+        if not self.headless:
+            start_time = time()
+        if not self.environment_ready:
+            raise ValueError("reset() has not been called yet. "
+                             "The environment still needs to be initialized.")
         # Verify that the number of actions and the number of agents is the
         # same
         if len(actions) != self.n_agents:
@@ -247,23 +279,23 @@ class Environment:
                 continue
             match action:
                 case 0:  # Move down
-                    new_pos = (self.agent_pos[i, 0],
-                               min(max_y, self.agent_pos[i, 1] + 1))
+                    new_pos = (self.agent_pos[i][0],
+                               min(max_y, self.agent_pos[i][1] + 1))
                 case 1:  # Move up
-                    new_pos = (self.agent_pos[i, 0],
-                               max(0, self.agent_pos[i, 1] - 1))
+                    new_pos = (self.agent_pos[i][0],
+                               max(0, self.agent_pos[i][1] - 1))
                     pass
                 case 2:  # Move left
-                    new_pos = (max(0, self.agent_pos[i, 0] - 1),
-                               self.agent_pos[i, 1])
+                    new_pos = (max(0, self.agent_pos[i][0] - 1),
+                               self.agent_pos[i][1])
                     pass
                 case 3:  # Move right
-                    new_pos = (min(max_x, self.agent_pos[i, 0] + 1),
-                               self.agent_pos[i, 1])
+                    new_pos = (min(max_x, self.agent_pos[i][0] + 1),
+                               self.agent_pos[i][1])
                     pass
                 case 4:  # Stand still
-                    new_pos = (self.agent_pos[i, 0],
-                               self.agent_pos[i, 1])
+                    new_pos = (self.agent_pos[i][0],
+                               self.agent_pos[i][1])
                 case _:
                     raise ValueError(f"Provided action {action} for agent {i} "
                                      f"is not one of the possible actions.")
@@ -272,22 +304,14 @@ class Environment:
         # Update the grid with the new agent positions and calculate the reward
         reward = self.reward_fn(self.grid, self.info)
         terminal_state = sum(self.agent_done) == self.n_agents
-        # delbots = []
-        # for i in range(self.n_agents):
-        #     r = self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]]
-        #     reward += r
-        #     if r == 1:
-        #         self.n_goals -= 1
-        #     elif r == 3 and self.n_goals == 0:
-        #         delbots.append(i)
-        #         continue
-        #     self.grid[self.agent_pos[i, 0], self.agent_pos[i, 1]] = 2
-        #
-        # for i in delbots:  # if any
-        #     self.n_agents -= 1
-        #     if self.n_agents == 0:  # TERMINAL STATE
-        #         return self.grid, reward, True, {}
-        #     self.agent_pos = np.delete(self.agent_pos, i, 0)
+        if terminal_state:
+            self.environment_ready = False
+
+        if not self.headless:
+            time_to_wait = self.target_spf - (time() - start_time)
+            if time_to_wait > 0:
+                sleep(time_to_wait)
+            self.gui.render(self.grid.cells, self.agent_pos, self.info)
 
         return self.grid.cells, reward, terminal_state, self.info
 
@@ -301,13 +325,26 @@ class Environment:
         """
         return float(sum(info["dirt_cleaned"]))
 
-    def render(self):
-        raise NotImplementedError
-
 
 if __name__ == '__main__':
     # This is testing code to load a single grid.
     base_grid_fp = Path("../grid_configs/base-room-1.grid")
-    env = Environment(base_grid_fp, False, 1, None)
+    env = Environment(base_grid_fp, False, 1, target_fps=-1)
     obs, inf = env.reset()
-    breakpoint()
+
+    from agents.random_agent import RandomAgent
+    agent = RandomAgent()
+
+    for i in trange(1000):
+        action = [agent.take_action(obs, inf)]
+        obs, reward, terminal_state, inf = env.step(action)
+        if terminal_state:
+            break
+
+    obs, inf = env.reset(headless=True)
+    for i in trange(100000):
+        action = [agent.take_action(obs, inf)]
+        obs, reward, terminal_state, inf = env.step(action)
+        if terminal_state:
+            break
+

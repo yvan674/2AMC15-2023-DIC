@@ -2,36 +2,39 @@
 
 Provides a GUI for the environment using pygame.
 """
-import pygame
 import sys
+from time import time
+
+import numpy as np
+import pygame
+from pygame import gfxdraw
 
 
 class EnvironmentGUI:
+    CELL_COLORS = [
+        (255, 255, 255),  # Empty cell
+        (189, 88, 88),    # Wall cell
+        (57, 57, 57),     # Obstacle cell
+        (255, 119, 0),    # Dirt cell
+        (34, 139, 34),    # Charger cell
+    ]
+    INFO_NAME_MAP = [
+        ("total_steps", "Total steps:"),
+        ("total_dirt_collected", "Total dirt collected:"),
+        ("total_failed_move", "Total failed moves:"),
+        ("total_done", "Agents charging:"),
+        ("fps", "FPS:")
+    ]
+
     def __init__(self, grid_size: tuple[int, int],
                  window_size: tuple[int, int] = (1152, 768)):
         """Provides a GUI to show what is happening in the environment.
 
         Args:
             grid_size: (n_cols, n_rows) in the grid.
-            window_size: The size of the pygame window.
+            window_size: The size of the pygame window. (width, height).
         """
         self.grid_size = grid_size
-
-        # Calculate grid size
-        if max(grid_size) <= 20:
-            self.cell_size = 30
-        elif 20 < max(grid_size) <= 30:
-            self.cell_size = 20
-        elif 30 < max(grid_size) <= 45:
-            self.cell_size = 15
-        elif 45 < max(grid_size) <= 55:
-            self.cell_size = 10
-        elif 55 < max(grid_size) <= 120:
-            self.cell_size = 5
-        else:
-            raise ValueError(f"Grid size of {grid_size} is too big to "
-                             f"visualize with our code.")
-
 
         pygame.init()
         pygame.display.init()
@@ -40,6 +43,23 @@ class EnvironmentGUI:
         self.clock = pygame.time.Clock()
 
         self.stats = self._reset_stats()
+
+        self.grid_panel_size = (int(window_size[0] * 0.75), window_size[1])
+        self.info_panel_rect = pygame.Rect(
+            self.grid_panel_size[0],
+            0,
+            window_size[0] - self.grid_panel_size[0],
+            window_size[1]
+        )
+        self.last_agent_pos = None
+
+        # Find the smallest window dimension and max grid size to calculate the
+        # grid scalar
+        self.scalar = min(self.grid_panel_size)
+        self.scalar /= max(self.grid_size) * 1.2
+
+        # FPS timer
+        self.last_render_time = time()
 
         self._initial_render()
 
@@ -53,7 +73,8 @@ class EnvironmentGUI:
         return {"total_dirt_collected": 0,
                 "total_failed_move": 0,
                 "total_done": 0,
-                "fps": "0.0"}
+                "fps": "0.0",
+                "total_steps": 0}
 
     def _initial_render(self):
         """Initial render of the environment. Also shows loading text."""
@@ -84,34 +105,102 @@ class EnvironmentGUI:
         height = rect.height * scalar
         return pygame.Rect(x, y, width, height)
 
-    def _draw_grid(self, surface: pygame.Surface, scalar: float):
+    def _draw_grid(self, surface: pygame.Surface, grid: np.ndarray,
+                   x_offset: int, y_offset: int):
         """Draws the grid world on the given surface."""
-        pass
+        for row in range(grid.shape[1]):
+            y = (row * self.scalar) + y_offset
+            for col in range(grid.shape[0]):
+                x = (col * self.scalar) + x_offset
+                rect = pygame.Rect(x, y, self.scalar, self.scalar)
+                # rect_fill = pygame.Rect(x + 1, y + 1,
+                #                         self.scalar - 2, self.scalar - 2)
 
-    def _draw_agent(self, surface: pygame.Surface, scalar: float):
+                val = grid[col, row]
+                pygame.draw.rect(surface, self.CELL_COLORS[val], rect)
+                pygame.draw.rect(surface, (255, 255, 255), rect, width=1)
+
+    def _draw_agent(self, surface: pygame.Surface,
+                    agent_pos: list[tuple[int, int]],
+                    x_offset: int, y_offset: int):
         """Draws the agent on the grid world."""
-        pass
+        for i, pos in enumerate(agent_pos):
+            # Draw the agent as a gray circle
+            x = (pos[0] * self.scalar) + x_offset
+            y = (pos[1] * self.scalar) + y_offset
+            r = int(self.scalar / 2) - 8
+            rect = pygame.Rect(x + 4, y + 4, self.scalar - 8, self.scalar - 8)
+            gfxdraw.aacircle(surface, rect.centerx, rect.centery, r,
+                             (100, 100, 100))
+            gfxdraw.filled_circle(surface, rect.centerx, rect.centery, r,
+                                  (100, 100, 100))
 
-    def _draw_info(self, surface, x_pos, y_pos):
+            # Draw the agent number on the agent
+            font = pygame.font.Font(None, int(self.scalar / 4))
+            text = font.render(str(i), True, (255, 255, 255))
+            textpos = text.get_rect()
+            textpos.centerx = rect.centerx
+            textpos.centery = rect.centery
+            surface.blit(text, textpos)
+
+    def _draw_info(self, surface):
         """Draws the info panel on the surface."""
-        pass
+        x_offset = self.grid_panel_size[0] + 20
+        y_offset = 50
 
-    def render(self):
-        self.stats["fps"] = f"{self.clock.get_fps():.1f}"
+        col_width = 200
+        row_height = 30
 
-        # Find the smallest window dimension and max grid size to calculate the
-        # grid scalar
-        scalar = min(self.window.get_size())
-        scalar /= max(self.grid_size) * self.cell_size
+        font = pygame.font.Font(None, 24)
+        for row, (key, name) in enumerate(self.INFO_NAME_MAP):
+            y_pos = y_offset + (row * row_height)
+            text = font.render(name, True, (0, 0, 0))
+            textpos = text.get_rect()
+            textpos.x = x_offset
+            textpos.y = y_pos
+            surface.blit(text, textpos)
+
+            text = font.render(f"{self.stats[key]}", True, (0, 0, 0))
+            textpos = text.get_rect()
+            textpos.x = x_offset + col_width
+            textpos.y = y_pos
+            surface.blit(text, textpos)
+
+    def render(self, grid_cells: np.ndarray, agent_pos: list[tuple[int, int]],
+               info: dict[str, any]):
+        """Render the environment.
+
+        Args:
+            grid_cells: The grid cells contained in the Grid class.
+            agent_pos: List of current agent positions
+            info: `info` dict held by the Environment class.
+        """
+        fps = 1 / (time() - self.last_render_time)
+        self.stats["fps"] = f"{fps:.1f}"
+        self.stats["total_dirt_collected"] += sum(info["dirt_cleaned"])
+
+        self.stats["total_steps"] += 1
+
+        failed_move = len(info["agent_moved"]) - sum(info["agent_moved"])
+        self.stats["total_failed_move"] += failed_move
+        self.stats["total_done"] = sum(info["agent_charging"])
 
         # Create a surface to actually draw on
         background = pygame.Surface(self.window.get_size()).convert()
         background.fill((250, 250, 250))
 
+        # Calculate grid offset
+        grid_width = self.scalar * grid_cells.shape[0]
+        grid_height = self.scalar * grid_cells.shape[1]
+        x_offset = ((self.grid_panel_size[0] / 2) - (grid_width / 2))
+        y_offset = ((self.grid_panel_size[1] / 2) - (grid_height / 2))
+
+        # Draw the background for the info panel
+        background.fill((238, 241, 240), self.info_panel_rect)
         # Draw each layer on the surface
-        self._draw_grid(background, scalar)
-        self._draw_agent(background, scalar)
-        self._draw_info(background, 798, 30)
+        self._draw_grid(background, grid_cells, x_offset, y_offset)
+        self._draw_agent(background, agent_pos, x_offset, y_offset)
+        self._draw_info(background)
 
         # Blit the surface onto the window
         update_rect = self.window.blit(background, background.get_rect())
@@ -122,3 +211,9 @@ class EnvironmentGUI:
             if event.type == pygame.QUIT:
                 sys.exit()
         pygame.event.pump()
+        self.last_render_time = time()
+
+    @staticmethod
+    def close():
+        """Closes the UI."""
+        pygame.quit()
