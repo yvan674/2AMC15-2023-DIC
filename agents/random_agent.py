@@ -10,10 +10,7 @@ from dic import BaseAgent
 
 
 class RandomAgent(BaseAgent):
-    def __init__(self):
-        """Agent that performs a random action every time. """
-        super().__init__()
-
+    """Agent that performs a random action every time. """
     def process_reward(self, observation: np.ndarray, reward: float):
         pass
 

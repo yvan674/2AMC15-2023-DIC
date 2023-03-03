@@ -23,6 +23,9 @@ def parse_args():
                         "one.")
     p.add_argument("--headless", action="store_true",
                    help="Disables rendering to train faster")
+    p.add_argument("--fps", type=int, default=30,
+                   help="Frames per second to render at. Only used if "
+                        "headless is not set.")
     p.add_argument("--iter", type=int, default=1000,
                    help="Number of iterations to go through.")
     p.add_argument("--out", type=Path,
@@ -31,18 +34,20 @@ def parse_args():
     return p.parse_args()
 
 
-def main(grid_paths: list[Path], headless: bool, iters: int, out: Path):
+def main(grid_paths: list[Path], headless: bool, iters: int, fps: int,
+         out: Path):
     """Main loop of the program."""
 
     for grid in grid_paths:
         # Set up the environment and reset it to its initial state
-        env = Environment(grid, headless, n_agents=1, agent_start_pos=None)
-        obs, info = env.reset()
+        env = Environment(grid, headless, n_agents=1, agent_start_pos=None,
+                          target_fps=fps)
+        obs, info = env.get_observation()
 
         # Set up the agents from scratch for every grid
-        agents = [NullAgent(),
-                  GreedyAgent(env.action_space),
-                  RandomAgent(env.action_space)]
+        agents = [NullAgent(0),
+                  GreedyAgent(0),
+                  RandomAgent(0)]
 
         # Iterate through each agent for `iters` iterations
         for agent in agents:
@@ -51,12 +56,15 @@ def main(grid_paths: list[Path], headless: bool, iters: int, out: Path):
                 action = agent.take_action(obs, info)
 
                 # The action is performed in the environment
-                obs, reward, terminated, truncated, info = env.step([action])
+                obs, reward, terminated, info = env.step([action])
 
                 # If the agent is terminated, we reset th env.
                 if terminated:
-                    obs, info = env.reset()
+                    obs, info, world_stats = env.reset()
+            obs, info, world_stats = env.reset()
+            print(world_stats)
 
 
 if __name__ == '__main__':
     args = parse_args()
+    main(args.GRID, args.headless, args.iter, args.fps, args.out)

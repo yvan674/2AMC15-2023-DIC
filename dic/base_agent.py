@@ -8,13 +8,13 @@ import numpy as np
 
 
 class BaseAgent(ABC):
-    def __init__(self):
+    def __init__(self, agent_number):
         """Base agent. All other agents should build on this class.
 
         As a reminder, you are free to add more methods/functions to this class
         if your agent requires it.
         """
-        pass
+        self.agent_number = agent_number
 
     @abstractmethod
     def process_reward(self, observation: np.ndarray, reward: float):

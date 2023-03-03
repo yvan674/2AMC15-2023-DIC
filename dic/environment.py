@@ -75,11 +75,13 @@ class Environment:
         else:
             self.reward_fn = reward_fn
         self.info = self._reset_info()
+        self.world_stats = self._reset_world_stats()
+
         self.environment_ready = False
         self.reset()
 
 
-    def _reset_info(self):
+    def _reset_info(self) -> dict:
         """Resets the info dictionary.
 
         info is a list of stats of the most recent step. It contains how many
@@ -102,6 +104,14 @@ class Environment:
                 "agent_moved": [False] * self.n_agents,
                 "agent_charging": self.agent_done,
                 "agent_pos": self.agent_pos}
+
+    @staticmethod
+    def _reset_world_stats() -> dict:
+        return {"total_dirt_cleaned": 0,
+                "total_steps": 0,
+                "total_agent_moves": 0,
+                "total_agents_at_charger": 0,
+                "total_failed_moves": 0}
 
     def _initialize_agent_pos(self):
         """Initializes agent position from the givin initial variables.
@@ -146,7 +156,7 @@ class Environment:
         return self.grid.cells, self.info
 
 
-    def reset(self, **kwargs) -> [np.ndarray, dict]:
+    def reset(self, **kwargs) -> [np.ndarray, dict, dict]:
         """Reset the environment to an initial state.
 
         This is to reset the environment. You can fit it keyword arguments
@@ -165,7 +175,15 @@ class Environment:
         Args:
             **kwargs: possible keyword options are the same as those for
                 the environment initializer.
+        Returns:
+            - observation as an np.ndarray
+            - info as a dict with keys ['dirt_cleaned', 'agent_moved',
+                'agent_charging', 'agent_pos']
+            - last run stats as a dict with keys ['total_dirt_cleaned',
+                'total_steps', 'total_agent_moves', 'total_agents_at_charger',
+                'total_failed_moves'].
         """
+        world_stats = deepcopy(self.world_stats)
         for k, v in kwargs.items():
             # Go through each possible keyword argument.
             match k:
@@ -194,6 +212,7 @@ class Environment:
         self.grid = load_grid_file(self.grid_fp)
         self._initialize_agent_pos()
         self.info = self._reset_info()
+        self.world_stats = self._reset_world_stats()
         if not self.headless:
             self.gui = EnvironmentGUI(self.grid.cells.shape)
             self.gui.reset()
@@ -202,7 +221,7 @@ class Environment:
                 self.gui.close()
 
         self.environment_ready = True
-        return self.grid.cells, self.info
+        return self.grid.cells, self.info, world_stats
 
     def _move_agent(self, new_pos: tuple[int, int], agent_id: int):
         """Moves the agent, if possible.
@@ -216,13 +235,17 @@ class Environment:
             case 0:  # Moved to an empty tile
                 self.agent_pos[agent_id] = new_pos
                 self.info["agent_moved"][agent_id] = True
+                self.world_stats["total_agent_moves"] += 1
             case 1 | 2:  # Moved to a wall or obstacle
+                self.world_stats["total_failed_moves"] += 1
                 pass
             case 3:  # Moved to a dirt tile
                 self.agent_pos[agent_id] = new_pos
                 self.grid.cells[new_pos] = 0
                 self.info["dirt_cleaned"][agent_id] += 1
+                self.world_stats["total_dirt_cleaned"] += 1
                 self.info["agent_moved"][agent_id] = True
+                self.world_stats["total_agent_moves"] += 1
             case 4:  # Moved to the charger
                 # Moving to charger is only permitted if the room is clean.
                 # NOTE: This is a pending design decision.
@@ -230,6 +253,7 @@ class Environment:
                     self.agent_pos[agent_id] = new_pos
                     self.agent_done[agent_id] = True
                     self.info["agent_charging"][agent_id] = True
+                    self.world_stats["total_agents_at_charger"] += 1
                 # Otherwise, the agent can't move and nothing happens
             case _:
                 raise ValueError(f"Grid is badly formed. It has a value of "
@@ -257,6 +281,7 @@ class Environment:
             2) If the terminal state has been reached, and
             3) State information.
         """
+        self.world_stats["total_steps"] += 1
         if not self.headless:
             start_time = time()
         if not self.environment_ready:

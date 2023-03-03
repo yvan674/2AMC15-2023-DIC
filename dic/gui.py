@@ -136,7 +136,7 @@ class EnvironmentGUI:
                                   (100, 100, 100))
 
             # Draw the agent number on the agent
-            font = pygame.font.Font(None, int(self.scalar / 4))
+            font = pygame.font.Font(None, int(self.scalar / 3))
             text = font.render(str(i), True, (255, 255, 255))
             textpos = text.get_rect()
             textpos.centerx = rect.centerx
