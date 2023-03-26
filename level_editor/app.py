@@ -3,13 +3,12 @@
 Level editor so making grids is somewhat easier than writing it as a raw numpy
 array. Credit to Tom v. Meer for writing this up.
 """
-import pickle
 import ast
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 
-from dic import Grid
+from environment import Grid
 from level_editor import GRID_CONFIGS_FP
 
 
@@ -26,11 +25,12 @@ def draw_grid(grid):
                  2: 'cell_obstacle',
                  3: 'cell_dirt',
                  4: 'cell_charger'}
-    return {'grid': render_template('grid.html',
-                                    height=30, width=30,
-                                    n_rows=grid.n_rows, n_cols=grid.n_cols,
-                                    room_config=grid.cells,
-                                    materials=materials)}
+    return {'grid': render_template(
+        'grid.html',
+        height=30, width=30,
+        n_rows=grid.n_rows, n_cols=grid.n_cols,
+        room_config=grid.cells, materials=materials
+    )}
 
 
 # Routes
@@ -55,6 +55,7 @@ def build_grid():
         save: boolean (true, false) to save the current grid to a file.
         name: filename to save the current grid to.
      """
+    # Get properties of the grid from the request
     n_rows = int(request.args.get('height'))
     n_cols = int(request.args.get('width'))
     obstacles = ast.literal_eval(request.args.get('obstacles'))
@@ -62,6 +63,8 @@ def build_grid():
     chargers = ast.literal_eval(request.args.get('chargers'))
     to_save = False if request.args.get('save') == 'false' else True
     name = str(request.args.get('name'))
+
+    # Put all of those things on to a Grid object
     grid = Grid(n_cols, n_rows)
     for (x, y) in obstacles:
         grid.place_single_obstacle(x, y)
@@ -71,10 +74,11 @@ def build_grid():
         grid.place_single_charger(x, y)
 
     drawn_grid = draw_grid(grid)
+
+    # If we need to save it, do so
     if to_save and len(name) > 0:
         save_fp = GRID_CONFIGS_FP / f"{name}.grid"
-        with open(save_fp, "wb") as f:
-            pickle.dump(grid, f)
+        grid.save_grid_file(save_fp)
         drawn_grid["success"] = "true"
         drawn_grid["save_fp"] = str(save_fp)
 
@@ -82,4 +86,4 @@ def build_grid():
 
 
 if __name__ == '__main__':
-    socket_io.run(app, debug=True, allow_unsafe_werkzeug=True)
+    socket_io.run(app, debug=False, allow_unsafe_werkzeug=True)

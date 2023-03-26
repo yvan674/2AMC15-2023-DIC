@@ -7,9 +7,8 @@ writing this.
 This script generates 5 grids, each with 5 rooms.
 """
 import numpy as np
-import pickle
 
-from dic import Grid
+from environment import Grid
 from level_editor import GRID_CONFIGS_FP
 
 
@@ -29,7 +28,7 @@ def generate_random_grid(n_rooms: int, grid_name: str):
     corr_y0 = int(height / 2)
     corr_y1 = int(height / 2) + 2
 
-    # Get upper rooms:
+    # Generate upper rooms
     rooms = np.random.randint(2, n_rooms)
     for i in range(0, width, width//rooms):
         grid.place_obstacle(x0=i,
@@ -42,7 +41,7 @@ def generate_random_grid(n_rooms: int, grid_name: str):
                             y0=1,
                             y1=corr_y0)
 
-    # Get lower rooms:
+    # Generate lower rooms
     rooms = np.random.randint(2, n_rooms)
     for i in range(0, width, width // rooms):
         grid.place_obstacle(x0=i,
@@ -55,8 +54,8 @@ def generate_random_grid(n_rooms: int, grid_name: str):
                             y0=corr_y1,
                             y1=height)
 
-    with open(GRID_CONFIGS_FP / f"{grid_name}.grid", "wb") as f:
-        pickle.dump(grid, f)
+    # Save the grid
+    grid.save_grid_file(GRID_CONFIGS_FP / f"{grid_name}.grid")
 
 
 if __name__ == '__main__':
