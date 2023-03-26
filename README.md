@@ -105,7 +105,7 @@ The world module contains:
 
 #### The Environment
 
-The environment is very important because everything lives in the environment [^1].
+The environment is very important because it contains everything we hold dear, including ourselves [^1].
 It is also the name of the class which our RL agent will act within.
 
 The main interaction with `Environment` is through the methods:
