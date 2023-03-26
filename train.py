@@ -8,7 +8,7 @@ from pathlib import Path
 
 from tqdm import trange
 
-from environment import Environment
+from world import Environment
 
 # Add your agents here
 from agents.null_agent import NullAgent
@@ -17,7 +17,7 @@ from agents.random_agent import RandomAgent
 
 
 def parse_args():
-    p = ArgumentParser("DIC Reinforcement Learning Trainer.")
+    p = ArgumentParser(description="DIC Reinforcement Learning Trainer.")
     p.add_argument("GRID", type=Path, nargs="+",
                    help="Paths to the grid file to use. There can be more than "
                         "one.")
@@ -34,17 +34,18 @@ def parse_args():
     return p.parse_args()
 
 
-def main(grid_paths: list[Path], headless: bool, iters: int, fps: int,
+def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
          out: Path):
     """Main loop of the program."""
 
     for grid in grid_paths:
         # Set up the environment and reset it to its initial state
-        env = Environment(grid, headless, n_agents=1, agent_start_pos=None,
+        env = Environment(grid, no_gui, n_agents=1, agent_start_pos=None,
                           target_fps=fps)
         obs, info = env.get_observation()
 
         # Set up the agents from scratch for every grid
+        # Add your agents here
         agents = [NullAgent(0),
                   GreedyAgent(0),
                   RandomAgent(0)]
@@ -67,4 +68,4 @@ def main(grid_paths: list[Path], headless: bool, iters: int, fps: int,
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args.GRID, args.headless, args.iter, args.fps, args.out)
+    main(args.GRID, args.no_gui, args.iter, args.fps, args.out)
