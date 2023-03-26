@@ -11,13 +11,13 @@ from warnings import warn
 import numpy as np
 from tqdm import trange
 
-from dic import Grid, load_grid_file
-from dic import EnvironmentGUI
+from environment.grid import Grid
+from environment.gui import EnvironmentGUI
 
 
 class Environment:
     def __init__(self, grid_fp: Path,
-                 headless: bool = False,
+                 no_gui: bool = False,
                  n_agents: int = 1,
                  agent_start_pos: list[tuple[int, int]] = None,
                  reward_fn: callable = None,
@@ -35,6 +35,7 @@ class Environment:
 
         Args:
             grid_fp: Path to the grid file to use.
+            no_gui: True if no GUI is desired.
             n_agents: The number of agents this environment should support.
             agent_start_pos: List of tuples of where each agent should start.
                 If None is provided, then a random start position for each
@@ -44,7 +45,7 @@ class Environment:
                 default reward function in this class for an example.
             target_fps: How fast the simulation should run if it is being shown
                 in a GUI. This is a target, not the actual speed. If in
-                headless mode, then the simulation will run as fast as
+                no_gui mode, then the simulation will run as fast as
                 possible. We may set a low FPS so we can actually see what's
                 happening. Set to 0 or less to unlock FPS.
         """
@@ -55,7 +56,7 @@ class Environment:
 
         # Set up the environment as a blank state.
         self.grid = None
-        self.headless = headless
+        self.no_gui = no_gui
         if target_fps <= 0:
             self.target_spf = 0.
         else:
@@ -195,8 +196,8 @@ class Environment:
                     self.agent_start_pos = None
                 case "agent_start_pos":
                     self.agent_start_pos = v
-                case "headless":
-                    self.headless = v
+                case "no_gui":
+                    self.no_gui = v
                 case "target_fps":
                     self.target_spf = 1. / v
                 case _:
@@ -209,11 +210,11 @@ class Environment:
                                  f"agree with number of starting positions "
                                  f"{len(self.agent_start_pos)}.")
 
-        self.grid = load_grid_file(self.grid_fp)
+        self.grid = Grid.load_grid_file(self.grid_fp)
         self._initialize_agent_pos()
         self.info = self._reset_info()
         self.world_stats = self._reset_world_stats()
-        if not self.headless:
+        if not self.no_gui:
             self.gui = EnvironmentGUI(self.grid.cells.shape)
             self.gui.reset()
         else:
@@ -282,7 +283,7 @@ class Environment:
             3) State information.
         """
         self.world_stats["total_steps"] += 1
-        if not self.headless:
+        if not self.no_gui:
             start_time = time()
         if not self.environment_ready:
             raise ValueError("reset() has not been called yet. "
@@ -332,7 +333,7 @@ class Environment:
         if terminal_state:
             self.environment_ready = False
 
-        if not self.headless:
+        if not self.no_gui:
             time_to_wait = self.target_spf - (time() - start_time)
             if time_to_wait > 0:
                 sleep(time_to_wait)
@@ -347,6 +348,8 @@ class Environment:
         This is a very simple default reward function. It simply checks if any
         dirt tiles were cleaned during the step and provides a reward equal to
         the total number of dirt tiles cleaned.
+
+        Any custom reward function must also follow the same signature.
         """
         return float(sum(info["dirt_cleaned"]))
 
@@ -357,18 +360,21 @@ if __name__ == '__main__':
     env = Environment(base_grid_fp, False, 1, target_fps=-1)
     obs, inf = env.reset()
 
+    # Load the random agent
     from agents.random_agent import RandomAgent
     agent = RandomAgent(0)
 
-    for i in trange(1000):
-        action = [agent.take_action(obs, inf)]
-        obs, reward, terminal_state, inf = env.step(action)
-        if terminal_state:
+    # Take 1000 steps with the GUI
+    for t in trange(1000):
+        act = [agent.take_action(obs, inf)]
+        obs, r, term_state, inf = env.step(act)
+        if term_state:
             break
 
-    obs, inf = env.reset(headless=True)
-    for i in trange(100000):
-        action = [agent.take_action(obs, inf)]
-        obs, reward, terminal_state, inf = env.step(action)
-        if terminal_state:
+    # Take 10000 steps without the GUI
+    obs, inf = env.reset(no_gui=True)
+    for t in trange(100000):
+        act = [agent.take_action(obs, inf)]
+        obs, r, term_state, inf = env.step(act)
+        if term_state:
             break

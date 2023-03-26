@@ -2,6 +2,8 @@
 
 Grid specifically for the level editor. Credit to Tom v. Meer for writing this.
 """
+from __future__ import annotations
+
 import pickle
 from pathlib import Path
 
@@ -11,6 +13,9 @@ import numpy as np
 class Grid:
     def __init__(self, n_cols, n_rows):
         """Grid representation of the world.
+
+        The grid representation is a 2-D numpy integer array with helper
+        functions.
 
         Possible grid values are:
         - 0: Empty
@@ -23,13 +28,13 @@ class Grid:
             n_cols: Number of columns the grid should have.
             n_rows: Number of rows the grid should have.
         """
-        self.n_rows = n_rows
-        self.n_cols = n_cols
-
         # Building the boundary of the grid:
         self.cells = np.zeros((n_cols, n_rows), dtype=np.int8)
         self.cells[0, :] = self.cells[-1, :] = 1
         self.cells[:, 0] = self.cells[:, -1] = 1
+
+        self.n_cols = self.cells.shape[0]
+        self.n_rows = self.cells.shape[1]
 
     def place_obstacle(self, x0, x1, y0, y1, from_edge=1):
         """Places a larger obstacle.
@@ -68,9 +73,35 @@ class Grid:
         """Removes dirt at x, y location on the grid."""
         self.cells[x][y] = 0
 
+    @staticmethod
+    def load_grid_file(fp: Path) -> Grid:
+        """Loads a `.grid` file.
 
-def load_grid_file(fp: Path) -> Grid:
-    """Loads a `.grid` file."""
-    with open(fp, "rb") as f:
-        grid = pickle.load(f)
-    return grid
+        Returns:
+            A Grid object from the file.
+        """
+        with open(fp, "rb") as f:
+            grid = pickle.load(f)
+        return grid
+
+    @staticmethod
+    def from_grid_array(arr: np.ndarray) -> Grid:
+        """Takes a numpy grid and turns it into a Grid object.
+
+        Args:
+            arr: The numpy array to be used for a Grid.
+        """
+        g = Grid(arr.shape[0], arr.shape[1])
+        g.cells = arr
+
+        return g
+
+    def save_grid_file(self, fp: Path):
+        """Saves a `.grid` file.
+
+        Since the grid is just a numpy array, we save the numpy array only.
+
+        Args:
+            fp: File path where the grid file is to be saved.
+        """
+        self.cells.tofile(fp)

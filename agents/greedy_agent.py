@@ -4,7 +4,7 @@ Chooses the best scoring value with no thought about the future.
 """
 import numpy as np
 from random import randint
-from dic import BaseAgent
+from agents import BaseAgent
 
 
 class GreedyAgent(BaseAgent):

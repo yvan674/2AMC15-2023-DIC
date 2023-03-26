@@ -4,7 +4,7 @@ An agent which does nothing.
 """
 import numpy as np
 
-from dic import BaseAgent
+from agents import BaseAgent
 
 
 class NullAgent(BaseAgent):
