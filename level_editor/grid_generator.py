@@ -6,10 +6,26 @@ writing this.
 
 This script generates 5 grids, each with 5 rooms.
 """
+from argparse import ArgumentParser
+
+from tqdm import trange
 import numpy as np
 
 from world import Grid
 from level_editor import GRID_CONFIGS_FP
+
+
+def parse_args():
+    p = ArgumentParser(description="Randomly generate grids.")
+
+    p.add_argument("N_GRIDS", type=int,
+                   help="Number of grids to generate.")
+    p.add_argument("N_ROOMS", type=int,
+                   help="Number of rooms to generate in each grid.")
+    p.add_argument("FILE_PREFIX", type=str,
+                   help="Prefix to give to the generated file name.")
+
+    return p.parse_args()
 
 
 def generate_random_grid(n_rooms: int, grid_name: str):
@@ -59,5 +75,6 @@ def generate_random_grid(n_rooms: int, grid_name: str):
 
 
 if __name__ == '__main__':
-    for grid_num in range(5):
-        generate_random_grid(5, f"random-house-{grid_num}")
+    args = parse_args()
+    for grid_num in trange(args.N_GRIDS):
+        generate_random_grid(args.N_ROOMS, f"{args.FILE_PREFIX}-{grid_num}")
