@@ -4,7 +4,6 @@ Grid specifically for the level editor. Credit to Tom v. Meer for writing this.
 """
 from __future__ import annotations
 
-import pickle
 from pathlib import Path
 
 import numpy as np
@@ -94,4 +93,5 @@ class Grid:
         Args:
             fp: File path where the grid file is to be saved.
         """
-        np.save(fp, self.cells)
+        np.save(fp.with_suffix(".npy"), self.cells)
+        fp.with_suffix(".npy").rename(fp.with_suffix(".grd"))

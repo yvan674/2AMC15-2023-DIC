@@ -1,5 +1,9 @@
 # 2AMC15-2023-DIC
-Code for the 2023 Data Intelligence Challenge Course
+
+Welcome to 2AMC15 Data Intelligence Challenge!.
+This is the repository containing the challenge environment code.
+
+The code is made up of 3 main modules: 
 
 ## Requirements
 - python >= 3.11
