@@ -8,7 +8,7 @@ import ast
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 
-from environment import Grid
+from world import Grid
 from level_editor import GRID_CONFIGS_FP
 
 
@@ -77,7 +77,7 @@ def build_grid():
 
     # If we need to save it, do so
     if to_save and len(name) > 0:
-        save_fp = GRID_CONFIGS_FP / f"{name}.grid"
+        save_fp = GRID_CONFIGS_FP / f"{name}.grd"
         grid.save_grid_file(save_fp)
         drawn_grid["success"] = "true"
         drawn_grid["save_fp"] = str(save_fp)

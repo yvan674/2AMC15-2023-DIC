@@ -8,7 +8,7 @@ This script generates 5 grids, each with 5 rooms.
 """
 import numpy as np
 
-from environment import Grid
+from world import Grid
 from level_editor import GRID_CONFIGS_FP
 
 
@@ -55,7 +55,7 @@ def generate_random_grid(n_rooms: int, grid_name: str):
                             y1=height)
 
     # Save the grid
-    grid.save_grid_file(GRID_CONFIGS_FP / f"{grid_name}.grid")
+    grid.save_grid_file(GRID_CONFIGS_FP / f"{grid_name}.grd")
 
 
 if __name__ == '__main__':
