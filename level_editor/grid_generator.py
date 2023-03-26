@@ -7,6 +7,7 @@ writing this.
 This script generates 5 grids, each with 5 rooms.
 """
 from argparse import ArgumentParser
+from random import randint
 
 from tqdm import trange
 import numpy as np
@@ -40,7 +41,8 @@ def generate_random_grid(n_rooms: int, grid_name: str):
     height = np.random.randint(10, 20)
     width = np.random.randint(10, 20)
     grid = Grid(width, height)
-    # Create the corridor:
+
+    # Create the corridor
     corr_y0 = int(height / 2)
     corr_y1 = int(height / 2) + 2
 
@@ -69,6 +71,22 @@ def generate_random_grid(n_rooms: int, grid_name: str):
                             x1=(i + 1) * int(width / rooms),
                             y0=corr_y1,
                             y1=height)
+
+    def choose_empty_cell():
+        zeros = np.where(grid.cells == 0)
+        idx = randint(0, len(zeros[0]) - 1)
+        return zeros[0][idx], zeros[1][idx]
+
+    # Place dirt
+    num_dirt = (height * width) // 10
+
+    for _ in range(num_dirt):
+        dirt_x, dirt_y = choose_empty_cell()
+        grid.place_single_dirt(dirt_x, dirt_y)
+
+    # Place charger
+    charger_x, charger_y = choose_empty_cell()
+    grid.place_single_charger(charger_x, charger_y)
 
     # Save the grid
     grid.save_grid_file(GRID_CONFIGS_FP / f"{grid_name}.grd")
