@@ -11,17 +11,20 @@ from warnings import warn
 import numpy as np
 from tqdm import trange
 
-from environment.grid import Grid
-from environment.gui import EnvironmentGUI
+from world.grid import Grid
+from world.gui import EnvironmentGUI
 
 
 class Environment:
-    def __init__(self, grid_fp: Path,
+    def __init__(self,
+                 grid_fp: Path,
                  no_gui: bool = False,
                  n_agents: int = 1,
+                 sigma: float = 0.,
                  agent_start_pos: list[tuple[int, int]] = None,
                  reward_fn: callable = None,
-                 target_fps: int = 30):
+                 target_fps: int = 30,
+                 random_seed: int | float | str | bytes | bytearray | None = 0):
         """Creates the grid environment for the robot vacuum.
 
         Creates a Grid environment from the provided grid file. The number of
@@ -37,6 +40,9 @@ class Environment:
             grid_fp: Path to the grid file to use.
             no_gui: True if no GUI is desired.
             n_agents: The number of agents this environment should support.
+            sigma: The stochasticity of the environment. The probability that
+                an agent makes the move that it has provided as an action is
+                calculated as 1-sigma.
             agent_start_pos: List of tuples of where each agent should start.
                 If None is provided, then a random start position for each
                 agent is used.
@@ -49,6 +55,8 @@ class Environment:
                 possible. We may set a low FPS so we can actually see what's
                 happening. Set to 0 or less to unlock FPS.
         """
+        random.seed(random_seed)
+        self.sigma = sigma
         if not grid_fp.exists():
             raise FileNotFoundError(f"Grid {grid_fp} does not exist.")
         # Load the grid from the file
@@ -166,12 +174,12 @@ class Environment:
 
         Example:
         >>> fp = Path("../grid_configs/base-room-1.grid")
-        >>> e = Environment(fp, False, 1, None)
+        >>> e = Environment(fp, False, 1, 0., None)
         >>> # Get the initial observation
         >>> observation, env_info = e.get_observation()
         >>> # Reset the environment, but for this training episode, we want
         >>> # to use 2 agents.
-        >>> observation, env_info = e.reset(n_agents=2)
+        >>> observation, env_info, stats = e.reset(n_agents=2)
 
         Args:
             **kwargs: possible keyword options are the same as those for
@@ -227,11 +235,23 @@ class Environment:
     def _move_agent(self, new_pos: tuple[int, int], agent_id: int):
         """Moves the agent, if possible.
 
+        If possible, the agents' position is changed in the agent_pos array.
+        If not, it is left untouched.
+
         Args:
             new_pos: The new position of the agent.
             agent_id: The id of the agent. This is its index in the list of
                 agent positions.
         """
+        # First check if any other agent is on that tile position
+        for other_agent_id in range(len(self.agent_pos)):
+            # Don't check against self
+            if agent_id == other_agent_id:
+                continue
+            if new_pos == self.agent_pos[other_agent_id]:
+                self.world_stats["total_failed_moves"] += 1
+                return
+
         match self.grid.cells[new_pos]:
             case 0:  # Moved to an empty tile
                 self.agent_pos[agent_id] = new_pos
@@ -256,6 +276,8 @@ class Environment:
                     self.info["agent_charging"][agent_id] = True
                     self.world_stats["total_agents_at_charger"] += 1
                 # Otherwise, the agent can't move and nothing happens
+                else:
+                    self.world_stats["total_failed_moves"] += 1
             case _:
                 raise ValueError(f"Grid is badly formed. It has a value of "
                                  f"{self.grid.cells[new_pos]} at position "
@@ -303,22 +325,26 @@ class Environment:
             if self.agent_done[i]:
                 # The agent is already on the charger, so it is done.
                 continue
-            match action:
+
+            # Add stochasticity into the agent action
+            val = random.random()
+            if val > self.sigma:
+                actual_action = action
+            else:
+                actual_action = random.randint(0, 4)
+            match actual_action:
                 case 0:  # Move down
                     new_pos = (self.agent_pos[i][0],
                                min(max_y, self.agent_pos[i][1] + 1))
                 case 1:  # Move up
                     new_pos = (self.agent_pos[i][0],
                                max(0, self.agent_pos[i][1] - 1))
-                    pass
                 case 2:  # Move left
                     new_pos = (max(0, self.agent_pos[i][0] - 1),
                                self.agent_pos[i][1])
-                    pass
                 case 3:  # Move right
                     new_pos = (min(max_x, self.agent_pos[i][0] + 1),
                                self.agent_pos[i][1])
-                    pass
                 case 4:  # Stand still
                     new_pos = (self.agent_pos[i][0],
                                self.agent_pos[i][1])
@@ -355,14 +381,14 @@ class Environment:
 
 
 if __name__ == '__main__':
-    # This is testing code to load a single grid.
-    base_grid_fp = Path("../grid_configs/base-room-1.grid")
+    # This is sample code to test a single grid.
+    base_grid_fp = Path("../grid_configs/room-1.grd")
     env = Environment(base_grid_fp, False, 1, target_fps=-1)
-    obs, inf = env.reset()
+    obs, inf = env.get_observation()
 
     # Load the random agent
     from agents.random_agent import RandomAgent
-    agent = RandomAgent(0)
+    agent = RandomAgent(agent_number=0)
 
     # Take 1000 steps with the GUI
     for t in trange(1000):
@@ -372,9 +398,12 @@ if __name__ == '__main__':
             break
 
     # Take 10000 steps without the GUI
-    obs, inf = env.reset(no_gui=True)
+    obs, inf, stats = env.reset(no_gui=True)
+    print(stats)
     for t in trange(100000):
         act = [agent.take_action(obs, inf)]
         obs, r, term_state, inf = env.step(act)
         if term_state:
             break
+
+    print(env.reset()[2])  # Print the world stats

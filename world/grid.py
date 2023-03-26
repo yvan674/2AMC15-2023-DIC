@@ -11,7 +11,7 @@ import numpy as np
 
 
 class Grid:
-    def __init__(self, n_cols, n_rows):
+    def __init__(self, n_cols: int, n_rows: int):
         """Grid representation of the world.
 
         The grid representation is a 2-D numpy integer array with helper
@@ -75,33 +75,23 @@ class Grid:
 
     @staticmethod
     def load_grid_file(fp: Path) -> Grid:
-        """Loads a `.grid` file.
+        """Loads a `.grd` file.
 
         Returns:
             A Grid object from the file.
         """
-        with open(fp, "rb") as f:
-            grid = pickle.load(f)
-        return grid
-
-    @staticmethod
-    def from_grid_array(arr: np.ndarray) -> Grid:
-        """Takes a numpy grid and turns it into a Grid object.
-
-        Args:
-            arr: The numpy array to be used for a Grid.
-        """
+        arr = np.load(fp)
         g = Grid(arr.shape[0], arr.shape[1])
         g.cells = arr
 
         return g
 
     def save_grid_file(self, fp: Path):
-        """Saves a `.grid` file.
+        """Saves a `.grd` file.
 
         Since the grid is just a numpy array, we save the numpy array only.
 
         Args:
             fp: File path where the grid file is to be saved.
         """
-        self.cells.tofile(fp)
+        np.save(fp, self.cells)
