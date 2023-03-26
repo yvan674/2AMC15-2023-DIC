@@ -8,7 +8,7 @@ from pathlib import Path
 
 from tqdm import trange
 
-from dic import Environment
+from environment import Environment
 
 # Add your agents here
 from agents.null_agent import NullAgent
@@ -21,11 +21,11 @@ def parse_args():
     p.add_argument("GRID", type=Path, nargs="+",
                    help="Paths to the grid file to use. There can be more than "
                         "one.")
-    p.add_argument("--headless", action="store_true",
+    p.add_argument("--no_gui", action="store_true",
                    help="Disables rendering to train faster")
     p.add_argument("--fps", type=int, default=30,
                    help="Frames per second to render at. Only used if "
-                        "headless is not set.")
+                        "no_gui is not set.")
     p.add_argument("--iter", type=int, default=1000,
                    help="Number of iterations to go through.")
     p.add_argument("--out", type=Path,
