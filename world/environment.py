@@ -477,7 +477,7 @@ class Environment:
         # Save the images
         for i, img in enumerate(path_images):
             img_name = f"{file_name}_agent-{i}"
-            out_fp = out_dir / f"{file_name}.png"
+            out_fp = out_dir / f"{img_name}.png"
             img.save(out_fp)
             if show_images:
                 img.show(f"Agent {i} Path Frequency")
