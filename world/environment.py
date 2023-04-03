@@ -2,17 +2,21 @@
 
 We define the grid environment for DIC in this file.
 """
+import datetime
 import random
-from time import time, sleep
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
+from time import time, sleep
 from warnings import warn
 
 import numpy as np
 from tqdm import trange
 
+from agents import BaseAgent
 from world.grid import Grid
 from world.gui import EnvironmentGUI
+from world.path_visualizer import visualize_path
 
 
 class Environment:
@@ -54,6 +58,8 @@ class Environment:
                 no_gui mode, then the simulation will run as fast as
                 possible. We may set a low FPS so we can actually see what's
                 happening. Set to 0 or less to unlock FPS.
+            random_seed: The random seed to use for this environment. If None
+                is provided, then the seed will be set to 0.
         """
         random.seed(random_seed)
         self.sigma = sigma
@@ -179,7 +185,7 @@ class Environment:
         >>> observation, env_info = e.get_observation()
         >>> # Reset the environment, but for this training episode, we want
         >>> # to use 2 agents.
-        >>> observation, env_info, stats = e.reset(n_agents=2)
+        >>> observation, env_info, world_stats = e.reset(n_agents=2)
 
         Args:
             **kwargs: possible keyword options are the same as those for
@@ -379,31 +385,128 @@ class Environment:
         """
         return float(sum(info["dirt_cleaned"]))
 
+    def evaluate_agent(self,
+                       grid_fp: Path,
+                       agents: list[BaseAgent],
+                       max_steps: int,
+                       out_dir: Path,
+                       sigma: float = 0.,
+                       agent_start_pos: list[tuple[int, int]] = None,
+                       random_seed: int | float | str | bytes | bytearray = 0,
+                       show_images: bool = False):
+        """Evaluates a single trained agent's performance.
+
+        What this does is it creates a completely new environment from the
+        provided grid and does a number of steps _without_ processing rewards
+        for the agent. This means that the agent doesn't learn here and simply
+        provides actions for any provided observation.
+
+        For each evaluation run, this produces a statistics file in the out
+        directory which is a txt. This txt contains the values:
+        [ `total_dirt_cleaned`, `total_steps`, `total_retraced_steps`,
+        `total_agents_at_charger`, `total_failed_moves`]
+
+        For each agent, this produces an image file in the given out directory
+        containing the path of the agent throughout the run.
+
+        Args:
+            grid_fp: Path to the grid file to use.
+            agents: A list of trained agents to evaluate.
+            max_steps: Max number of steps to take for each agent.
+            out_dir: Where to save the results.
+            sigma: The stochasticity of the environment. The probability that
+                an agent makes the move that it has provided as an action is
+                calculated as 1-sigma.
+            agent_start_pos: List of tuples of where each agent should start.
+                If None is provided, then a random start position for each
+                agent is used.
+            random_seed: The random seed to use for this environment. If None
+                is provided, then the seed will be set to 0.
+            show_images: Whether to show the images at the end of the
+                evaluation. If False, only saves the images.
+        """
+        if not out_dir.exists():
+            warn("Evaluation output directory does not exist. Creating the "
+                 "directory.")
+            out_dir.mkdir(parents=True, exist_ok=True)
+        env = Environment(grid_fp=grid_fp,
+                          no_gui=True,
+                          n_agents=len(agents),
+                          sigma=sigma,
+                          agent_start_pos=agent_start_pos,
+                          target_fps=-1,
+                          random_seed=random_seed)
+        obs, info = env.get_observation()
+
+        initial_grid = np.copy(obs)
+
+        # Set initial positions for the agent
+        agent_paths = [[pos] for pos in info['agent_pos']]
+
+        for _ in trange(max_steps,
+                        desc=f"Evaluating agent"
+                             f"{'s' if len(agents) > 1 else ''}"):
+            # Get the agent actions
+            actions = [agent.take_action(obs, info)
+                       for agent in agents]
+            # Take a step in the environment
+            obs, _, terminated, info = env.step(actions)
+
+            # Save the new agent locations
+            for i, pos in enumerate(info["agent_pos"]):
+                agent_paths[i].append(pos)
+
+            if terminated:
+                break
+        obs, info, world_stats = env.reset()
+
+        info["dirt_remaining"] = env.grid.sum_dirt()
+
+        # Generate path images
+        path_images = visualize_path(initial_grid, agent_paths)
+
+        print("Evaluation complete. Results:")
+        # File name is the current date and time
+        file_name = datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
+        out_fp = out_dir / f"{file_name}.txt"
+        with open(out_fp, "w") as f:
+            for key, value in world_stats.items():
+                f.write(f"{key}: {value}\n")
+                print(f"{key}: {value}")
+
+        # Save the images
+        for i, img in enumerate(path_images):
+            img_name = f"{file_name}_agent-{i}"
+            out_fp = out_dir / f"{file_name}.png"
+            img.save(out_fp)
+            if show_images:
+                img.show(f"Agent {i} Path Frequency")
+
 
 if __name__ == '__main__':
     # This is sample code to test a single grid.
     base_grid_fp = Path("../grid_configs/room-1.grd")
-    env = Environment(base_grid_fp, False, 1, target_fps=-1)
-    obs, inf = env.get_observation()
+    envi = Environment(base_grid_fp, False, 1, target_fps=-1)
+    observe, inf = envi.get_observation()
 
     # Load the random agent
     from agents.random_agent import RandomAgent
-    agent = RandomAgent(agent_number=0)
+    test_agent = RandomAgent(agent_number=0)
 
     # Take 1000 steps with the GUI
     for t in trange(1000):
-        act = [agent.take_action(obs, inf)]
-        obs, r, term_state, inf = env.step(act)
+        act = [test_agent.take_action(observe, inf)]
+        observe, r, term_state, inf = envi.step(act)
         if term_state:
             break
 
     # Take 10000 steps without the GUI
-    obs, inf, stats = env.reset(no_gui=True)
+    observe, inf, stats = envi.reset(no_gui=True)
     print(stats)
     for t in trange(100000):
-        act = [agent.take_action(obs, inf)]
-        obs, r, term_state, inf = env.step(act)
+        act = [test_agent.take_action(observe, inf)]
+        observe, r, term_state, inf = envi.step(act)
         if term_state:
             break
 
-    print(env.reset()[2])  # Print the world stats
+    print(envi.reset()[2])  # Print the world stats
