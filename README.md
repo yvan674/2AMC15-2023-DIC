@@ -38,7 +38,7 @@ The code is made up of 3 modules:
 2. `level_editor`
 3. `world`
 
-#3# The `agent` module
+### The `agent` module
 
 The `agent` module contains the `BaseAgent` class as well as some benchmark agents to test against.
 
@@ -137,4 +137,5 @@ Because of this, we recommend using it only while testing/debugging and not whil
 - tqdm ~= 4
 - pygame ~= 2.3
 - flask ~= 2.2
-- flask-socketio ~=5.3
+- flask-socketio ~= 5.3
+- pillow ~= 9.4
