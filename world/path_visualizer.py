@@ -91,23 +91,27 @@ def draw_freq_image(agent_path: list[tuple[int, int]],
     return freq_image
 
 
-def visualize_path(grid: Grid, agent_paths: list[list[tuple[int, int]]]) \
+def visualize_path(grid_cells: np.ndarray,
+                   agent_paths: list[list[tuple[int, int]]]) \
         -> list[Image.Image]:
     """Visualizes the path of (multiple) agents through the environment.
 
     Args:
-        grid: The Grid object contained by the environment.
+        grid_cells: The grid cells that are underlying the Grid object.
         agent_paths: A list of tuples containing the x and y coordinates of
             the agent's path.
+
+    Returns:
+        A list of images showing the grid and the frequency of the agent
+        traversing each position on the grid.
     """
-    cells = grid.cells
-    grid_size = cells.shape
+    grid_size = grid_cells.shape
     scalar = 30
     image_size = tuple((g * scalar) + 2 for g in grid_size)
     freq_scalar = 20
     final_images = []
 
-    base_image = draw_base_image(cells, scalar, image_size)
+    base_image = draw_base_image(grid_cells, scalar, image_size)
 
     for i, agent_path in enumerate(agent_paths):
         freq_image = draw_freq_image(agent_path, grid_size, scalar, freq_scalar,
