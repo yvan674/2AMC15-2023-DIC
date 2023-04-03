@@ -10,7 +10,6 @@ from PIL import Image
 from PIL import ImageDraw
 import numpy as np
 
-from world import Grid
 from world import EnvironmentGUI
 
 
