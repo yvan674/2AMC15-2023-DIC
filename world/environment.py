@@ -381,12 +381,22 @@ class Environment:
         dirt tiles were cleaned during the step and provides a reward equal to
         the total number of dirt tiles cleaned.
 
-        Any custom reward function must also follow the same signature.
+        Any custom reward function must also follow the same signature, meaning
+        it must be written like `reward_name(grid, info)`.
+
+        Args:
+            grid: The grid the agent is moving on, in case that is needed by
+                the reward function.
+            info: The world info, in case that is needed by the reward function.
+
+        Returns:
+            A single floating point value representing the reward for a given
+            action.
         """
         return float(sum(info["dirt_cleaned"]))
 
-    def evaluate_agent(self,
-                       grid_fp: Path,
+    @staticmethod
+    def evaluate_agent(grid_fp: Path,
                        agents: list[BaseAgent],
                        max_steps: int,
                        out_dir: Path,

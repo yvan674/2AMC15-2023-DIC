@@ -66,7 +66,7 @@ def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
             obs, info, world_stats = env.reset()
             print(world_stats)
 
-            env.evaluate_agent(grid, [agent], 1000, out, 0.2)
+            Environment.evaluate_agent(grid, [agent], 1000, out, 0.2)
 
 
 
