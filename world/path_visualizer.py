@@ -70,21 +70,21 @@ def draw_freq_image(agent_path: list[tuple[int, int]],
     draw = ImageDraw.ImageDraw(freq_image)
 
     for row in range(grid_shape[1]):
-        y = (row * grid_scalar) + 1
+        y = (row * grid_scalar) + 1 + cell_offset
         for col in range(grid_shape[0]):
-            x = (col * grid_scalar) + 1
+            x = (col * grid_scalar) + 1 + cell_offset
             val = freq_grid[col, row]
             if val == 0:
                 # Don't draw anything if the cells has never been traversed.
                 continue
             try:
-                # -1 here because we consider 0 non-traversed and is not drawn.
-                color = bmw[val - 1]
+                # minus because we want to start from white.
+                color = bmw[-val]
             except IndexError:
                 # There is no chance the value is < 1 here, but just in case.
                 color = bmw[0]
 
-            draw.rectangle((x + cell_offset, y + cell_offset,
+            draw.rectangle((x, y,
                             x + freq_scalar, y + freq_scalar),
                            color)
 

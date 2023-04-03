@@ -47,8 +47,8 @@ def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
         # Set up the agents from scratch for every grid
         # Add your agents here
         agents = [NullAgent(0),
-                  GreedyAgent(1),
-                  RandomAgent(2)]
+                  GreedyAgent(0),
+                  RandomAgent(0)]
 
         # Iterate through each agent for `iters` iterations
         for agent in agents:
@@ -66,7 +66,7 @@ def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
             obs, info, world_stats = env.reset()
             print(world_stats)
 
-            env.evaluate_agent(agent, out)
+            env.evaluate_agent(grid, [agent], 1000, out, 0.2)
 
 
 
