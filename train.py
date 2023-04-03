@@ -47,8 +47,8 @@ def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
         # Set up the agents from scratch for every grid
         # Add your agents here
         agents = [NullAgent(0),
-                  GreedyAgent(0),
-                  RandomAgent(0)]
+                  GreedyAgent(1),
+                  RandomAgent(2)]
 
         # Iterate through each agent for `iters` iterations
         for agent in agents:
@@ -59,11 +59,15 @@ def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
                 # The action is performed in the environment
                 obs, reward, terminated, info = env.step([action])
 
-                # If the agent is terminated, we reset th env.
+                # If the agent is terminated, we reset the env.
                 if terminated:
                     obs, info, world_stats = env.reset()
+                agent.process_reward(obs, reward)
             obs, info, world_stats = env.reset()
             print(world_stats)
+
+            env.evaluate_agent(agent, out)
+
 
 
 if __name__ == '__main__':

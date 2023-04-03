@@ -112,11 +112,9 @@ class EnvironmentGUI:
             y = (row * self.scalar) + y_offset
             for col in range(grid.shape[0]):
                 x = (col * self.scalar) + x_offset
-                rect = pygame.Rect(x, y, self.scalar, self.scalar)
-                # rect_fill = pygame.Rect(x + 1, y + 1,
-                #                         self.scalar - 2, self.scalar - 2)
-
                 val = grid[col, row]
+
+                rect = pygame.Rect(x, y, self.scalar, self.scalar)
                 pygame.draw.rect(surface, self.CELL_COLORS[val], rect)
                 pygame.draw.rect(surface, (255, 255, 255), rect, width=1)
 
