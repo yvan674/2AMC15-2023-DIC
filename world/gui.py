@@ -53,6 +53,9 @@ class EnvironmentGUI:
         )
         self.last_agent_pos = None
 
+        self.paused = False
+        self.step = False
+
         # Find the smallest window dimension and max grid size to calculate the
         # grid scalar
         self.scalar = min(self.grid_panel_size)
@@ -118,6 +121,20 @@ class EnvironmentGUI:
                 pygame.draw.rect(surface, self.CELL_COLORS[val], rect)
                 pygame.draw.rect(surface, (255, 255, 255), rect, width=1)
 
+    def _draw_button(self, surface: pygame.Surface, text: str,
+                     rect: pygame.Rect, color: tuple[int, int, int],
+                     text_color: tuple[int, int, int] = (0, 0, 0)):
+        """Draws a button on the given surface."""
+        pygame.draw.rect(surface, color, rect)
+        pygame.draw.rect(surface, (255, 255, 255), rect, width=1)
+
+        font = pygame.font.Font(None, int(self.scalar / 2))
+        text = font.render(text, True, text_color)
+        textpos = text.get_rect()
+        textpos.centerx = rect.centerx
+        textpos.centery = rect.centery
+        surface.blit(text, textpos)
+
     def _draw_agent(self, surface: pygame.Surface,
                     agent_pos: list[tuple[int, int]],
                     x_offset: int, y_offset: int):
@@ -141,8 +158,12 @@ class EnvironmentGUI:
             textpos.centery = rect.centery
             surface.blit(text, textpos)
 
-    def _draw_info(self, surface):
-        """Draws the info panel on the surface."""
+    def _draw_info(self, surface) -> tuple[pygame.Rect, pygame.Rect]:
+        """Draws the info panel on the surface.
+
+        Returns:
+            The rect of the pause button and the step button.
+        """
         x_offset = self.grid_panel_size[0] + 20
         y_offset = 50
 
@@ -163,6 +184,26 @@ class EnvironmentGUI:
             textpos.x = x_offset + col_width
             textpos.y = y_pos
             surface.blit(text, textpos)
+
+        button_row = len(self.INFO_NAME_MAP) + 1
+        # Draw a button to pause the simulation
+        pause_rect = pygame.Rect(x_offset,
+                                 y_offset + (button_row * row_height) + 50,
+                                 200,
+                                 50)
+        self._draw_button(surface, "Resume" if self.paused else "Pause",
+                          pause_rect, (255, 255, 255), (0, 0, 0))
+
+        # Draw a button to step through the simulation
+        step_rect = pygame.Rect(x_offset,
+                                y_offset + (button_row * row_height) + 110,
+                                200,
+                                50)
+        self._draw_button(surface, "Step", step_rect, (255, 255, 255),
+                          (0, 0, 0))
+
+        return pause_rect, step_rect
+
 
     def render(self, grid_cells: np.ndarray, agent_pos: list[tuple[int, int]],
                info: dict[str, any]):
@@ -198,7 +239,7 @@ class EnvironmentGUI:
         # Draw each layer on the surface
         self._draw_grid(background, grid_cells, x_offset, y_offset)
         self._draw_agent(background, agent_pos, x_offset, y_offset)
-        self._draw_info(background)
+        pause_rect, step_rect = self._draw_info(background)
 
         # Blit the surface onto the window
         update_rect = self.window.blit(background, background.get_rect())
@@ -208,6 +249,16 @@ class EnvironmentGUI:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if pause_rect.collidepoint(event.pos):
+                    # DEBUG
+                    print("Toggling pause")
+                    self.paused = not self.paused
+                elif step_rect.collidepoint(event.pos):
+                    # DEBUG
+                    print("Stepping")
+                    self.paused = True
+                    self.step = True
         pygame.event.pump()
         self.last_render_time = time()
 
