@@ -2,6 +2,9 @@
 
 Train your RL Agent in this file.
 Feel free to modify this file as you need.
+
+In this example training script, we use command line arguments. Feel free to
+change this to however you want it to work.
 """
 from argparse import ArgumentParser
 from pathlib import Path
@@ -23,11 +26,15 @@ def parse_args():
                         "one.")
     p.add_argument("--no_gui", action="store_true",
                    help="Disables rendering to train faster")
+    p.add_argument("--sigma", type=float, default=0.,
+                   help="Sigma value for the stochasticity of the environment.")
     p.add_argument("--fps", type=int, default=30,
                    help="Frames per second to render at. Only used if "
                         "no_gui is not set.")
     p.add_argument("--iter", type=int, default=1000,
                    help="Number of iterations to go through.")
+    p.add_argument("--random_seed", type=int, default=0,
+                   help="Random seed value for the environment.")
     p.add_argument("--out", type=Path,
                    help="Where to save training results.")
 
@@ -35,13 +42,13 @@ def parse_args():
 
 
 def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
-         out: Path):
+         sigma: float, out: Path, random_seed: int):
     """Main loop of the program."""
 
     for grid in grid_paths:
         # Set up the environment and reset it to its initial state
         env = Environment(grid, no_gui, n_agents=1, agent_start_pos=None,
-                          target_fps=fps)
+                          sigma=sigma, target_fps=fps, random_seed=random_seed)
         obs, info = env.get_observation()
 
         # Set up the agents from scratch for every grid
@@ -72,4 +79,5 @@ def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args.GRID, args.no_gui, args.iter, args.fps, args.out)
+    main(args.GRID, args.no_gui, args.iter, args.fps, args.out, args.sigma,
+         args.random_seed)

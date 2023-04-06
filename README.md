@@ -8,27 +8,35 @@ This is the repository containing the challenge environment code.
 1. Create an agent which inherits from the `BaseAgent` class
 2. Add the agents you want to test to `train.py`
    - There are 2 places to add you agent. Look for the comment `# Add your agent here` for where to add your agent.
-3. Run `$ python train.py grid_configs/room-1.grid results/` to start training!
+3. Run `$ python train.py grid_configs/rooms-1.grid results/` to start training!
 
 `train.py` is just an example training script. 
 Feel free to modify it as necessary.
+In our basic example, we use command line arguments to select options for it.
+This may not be convenient for you and you can choose to replace this training script with whatever you want.
 By default, its usage is:
 
 ```bash
-usage: train.py [-h] [--no_gui] [--fps FPS] [--iter ITER] [--out OUT]
+usage: train.py [-h] [--no_gui] [--sigma SIGMA] [--fps FPS] [--iter ITER]
+                [--random_seed RANDOM_SEED] [--out OUT]
                 GRID [GRID ...]
 
 DIC Reinforcement Learning Trainer.
 
 positional arguments:
-  GRID         Paths to the grid file to use. There can be more than one.
+  GRID                  Paths to the grid file to use. There can be more than
+                        one.
 
 options:
-  -h, --help   show this help message and exit
-  --no_gui     Disables rendering to train faster
-  --fps FPS    Frames per second to render at. Only used if no_gui is not set.
-  --iter ITER  Number of iterations to go through.
-  --out OUT    Where to save training results.
+  -h, --help            show this help message and exit
+  --no_gui              Disables rendering to train faster
+  --sigma SIGMA         Sigma value for the stochasticity of the environment.
+  --fps FPS             Frames per second to render at. Only used if no_gui is
+                        not set.
+  --iter ITER           Number of iterations to go through.
+  --random_seed RANDOM_SEED
+                        Random seed value for the environment.
+  --out OUT             Where to save training results.
 ```
 ## Code guide
 
