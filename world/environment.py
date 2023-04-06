@@ -470,7 +470,7 @@ class Environment:
                 break
         obs, info, world_stats = env.reset()
 
-        info["dirt_remaining"] = env.grid.sum_dirt()
+        world_stats["dirt_remaining"] = env.grid.sum_dirt()
 
         # Generate path images
         path_images = visualize_path(initial_grid, agent_paths)
