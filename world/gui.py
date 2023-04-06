@@ -3,7 +3,7 @@
 Provides a GUI for the environment using pygame.
 """
 import sys
-from time import time
+from time import perf_counter
 
 import numpy as np
 import pygame
@@ -62,7 +62,9 @@ class EnvironmentGUI:
         self.scalar /= max(self.grid_size) * 1.2
 
         # FPS timer
-        self.last_render_time = time()
+        self.last_render_time = perf_counter()
+        self.last_10_fps = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        self.frame_count = 0
 
         self._initial_render()
 
@@ -214,8 +216,14 @@ class EnvironmentGUI:
             agent_pos: List of current agent positions
             info: `info` dict held by the Environment class.
         """
-        fps = 1 / (time() - self.last_render_time)
-        self.stats["fps"] = f"{fps:.1f}"
+        # if self.paused:
+        curr_time = perf_counter()
+        fps = 1 / (curr_time - self.last_render_time)
+        self.last_render_time = curr_time
+        self.frame_count += 1
+        self.frame_count %= 10
+        self.last_10_fps[self.frame_count] = fps
+        self.stats["fps"] = f"{sum(self.last_10_fps) / 10:.1f}"
         self.stats["total_dirt_collected"] += sum(info["dirt_cleaned"])
 
         self.stats["total_steps"] += 1
@@ -260,7 +268,6 @@ class EnvironmentGUI:
                     self.paused = True
                     self.step = True
         pygame.event.pump()
-        self.last_render_time = time()
 
     @staticmethod
     def close():
