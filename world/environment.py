@@ -311,8 +311,21 @@ class Environment:
             3) State information.
         """
         self.world_stats["total_steps"] += 1
+        is_single_step = False
         if not self.no_gui:
             start_time = time()
+            while self.gui.paused:
+                # If the GUI is paused but asking to step, then we step
+                if self.gui.step:
+                    is_single_step = True
+                    self.gui.step = False
+                    break
+                # Otherwise, we render the current state only
+                paused_info = self._reset_info()
+                paused_info["agent_moved"] = [True] * self.n_agents
+                self.gui.render(self.grid.cells, self.agent_pos, paused_info,
+                                is_single_step)
+
         if not self.environment_ready:
             raise ValueError("reset() has not been called yet. "
                              "The environment still needs to be initialized.")
@@ -369,7 +382,8 @@ class Environment:
             time_to_wait = self.target_spf - (time() - start_time)
             if time_to_wait > 0:
                 sleep(time_to_wait)
-            self.gui.render(self.grid.cells, self.agent_pos, self.info)
+            self.gui.render(self.grid.cells, self.agent_pos, self.info,
+                            is_single_step)
 
         return self.grid.cells, reward, terminal_state, self.info
 

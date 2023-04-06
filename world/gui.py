@@ -3,7 +3,7 @@
 Provides a GUI for the environment using pygame.
 """
 import sys
-from time import perf_counter
+from time import perf_counter, sleep
 
 import numpy as np
 import pygame
@@ -54,7 +54,9 @@ class EnvironmentGUI:
         self.last_agent_pos = None
 
         self.paused = False
+        self.paused_clicked = False
         self.step = False
+        self.step_clicked = False
 
         # Find the smallest window dimension and max grid size to calculate the
         # grid scalar
@@ -193,40 +195,55 @@ class EnvironmentGUI:
                                  y_offset + (button_row * row_height) + 50,
                                  200,
                                  50)
+
+        clicked_color = (155, 155, 155)
+        color = (255, 255, 255)
+
         self._draw_button(surface, "Resume" if self.paused else "Pause",
-                          pause_rect, (255, 255, 255), (0, 0, 0))
+                          pause_rect,
+                          clicked_color if self.paused_clicked else color,
+                          (0, 0, 0))
 
         # Draw a button to step through the simulation
         step_rect = pygame.Rect(x_offset,
                                 y_offset + (button_row * row_height) + 110,
                                 200,
                                 50)
-        self._draw_button(surface, "Step", step_rect, (255, 255, 255),
+        self._draw_button(surface, "Step", step_rect,
+                          clicked_color if self.step_clicked else color,
                           (0, 0, 0))
 
         return pause_rect, step_rect
 
 
     def render(self, grid_cells: np.ndarray, agent_pos: list[tuple[int, int]],
-               info: dict[str, any]):
+               info: dict[str, any], is_single_step: bool = False):
         """Render the environment.
 
         Args:
             grid_cells: The grid cells contained in the Grid class.
             agent_pos: List of current agent positions
             info: `info` dict held by the Environment class.
+            is_single_step: Whether this render is caused by a click of the
+                `step` button.
         """
+        self.frame_count += 1
+        self.frame_count %= 10
         # if self.paused:
+        #     print(self.last_10_fps)
+        #     # Sleep is not great at actually waiting the right amount of time,
+        #     # so we divide that time by 0.5
+        #     sleep(1 / self.last_10_fps[self.frame_count] * 0.5)
         curr_time = perf_counter()
         fps = 1 / (curr_time - self.last_render_time)
         self.last_render_time = curr_time
-        self.frame_count += 1
-        self.frame_count %= 10
+
         self.last_10_fps[self.frame_count] = fps
         self.stats["fps"] = f"{sum(self.last_10_fps) / 10:.1f}"
         self.stats["total_dirt_collected"] += sum(info["dirt_cleaned"])
 
-        self.stats["total_steps"] += 1
+        if (not self.paused and not self.step) or is_single_step:
+            self.stats["total_steps"] += 1
 
         failed_move = len(info["agent_moved"]) - sum(info["agent_moved"])
         self.stats["total_failed_move"] += failed_move
@@ -258,13 +275,18 @@ class EnvironmentGUI:
             if event.type == pygame.QUIT:
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Detect click events
                 if pause_rect.collidepoint(event.pos):
-                    # DEBUG
-                    print("Toggling pause")
-                    self.paused = not self.paused
+                    self.paused_clicked = True
                 elif step_rect.collidepoint(event.pos):
-                    # DEBUG
-                    print("Stepping")
+                    self.step_clicked = True
+            elif event.type == pygame.MOUSEBUTTONUP:
+                # Only do the action on mouse button up, as is expected.
+                if self.paused_clicked:
+                    self.paused_clicked = False
+                    self.paused = not self.paused
+                elif self.step_clicked:
+                    self.step_clicked = False
                     self.paused = True
                     self.step = True
         pygame.event.pump()
