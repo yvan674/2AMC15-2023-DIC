@@ -168,9 +168,6 @@ def float_rgb_to_int(rgb: tuple[float, float, float]) -> tuple[int, int, int]:
     return tuple(int(c * 255) for c in rgb)
 
 
-
-
-
 def visualize_path(grid_cells: np.ndarray,
                    agent_paths: list[list[tuple[int, int]]]) \
         -> list[Image.Image]:
