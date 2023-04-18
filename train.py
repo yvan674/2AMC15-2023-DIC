@@ -79,5 +79,5 @@ def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args.GRID, args.no_gui, args.iter, args.fps, args.out, args.sigma,
+    main(args.GRID, args.no_gui, args.iter, args.fps, args.sigma, args.out,
          args.random_seed)
