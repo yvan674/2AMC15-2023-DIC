@@ -11,12 +11,32 @@ from pathlib import Path
 
 from tqdm import trange
 
-from world import Environment
+try:
+    from world import Environment
 
-# Add your agents here
-from agents.null_agent import NullAgent
-from agents.greedy_agent import GreedyAgent
-from agents.random_agent import RandomAgent
+    # Add your agents here
+    from agents.null_agent import NullAgent
+    from agents.greedy_agent import GreedyAgent
+    from agents.random_agent import RandomAgent
+except ModuleNotFoundError:
+    from os import path
+    from os import pardir
+    import sys
+
+    root_path = path.abspath(path.join(
+        path.join(path.abspath(__file__), pardir), pardir)
+    )
+
+    if root_path not in sys.path:
+        sys.path.extend(root_path)
+
+    from world import Environment
+
+    # Add your agents here
+    from agents.null_agent import NullAgent
+    from agents.greedy_agent import GreedyAgent
+    from agents.random_agent import RandomAgent
+
 
 
 def parse_args():
