@@ -8,7 +8,7 @@ This is the repository containing the challenge environment code.
 1. Create an agent which inherits from the `BaseAgent` class
 2. Add the agents you want to test to `train.py`
    - There are 2 places to add you agent. Look for the comment `# Add your agent here` for where to add your agent.
-3. Run `$ python train.py grid_configs/rooms-1.grid results/` to start training!
+3. Run `$ python train.py grid_configs/rooms-1.grd results/` to start training!
 
 `train.py` is just an example training script. 
 Feel free to modify it as necessary.
@@ -85,10 +85,11 @@ All levels will be saved to the `grid_configs/` directory.
 
 Where the grids are saved can be changed in the file `level_editor/__init__.py`, but this is not recommended.
 
-We also provide a `grid_generator.py` file to generate random grids.
+We also provide a `grid_generator.py` file to generate random grids, found in `level_editor` directory.
 Usage is:
 
 ```bash
+$ cd level_editor
 $ python grid_generator.py 
 
 usage: grid_generator.py [-h] N_GRIDS N_ROOMS FILE_PREFIX
