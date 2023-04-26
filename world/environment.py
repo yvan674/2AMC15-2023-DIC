@@ -32,7 +32,7 @@ except ModuleNotFoundError:
     )
 
     if root_path not in sys.path:
-        sys.path.extend(root_path)
+        sys.path.append(root_path)
 
     from agents import BaseAgent
     from world.grid import Grid

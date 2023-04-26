@@ -10,7 +10,25 @@ from PIL import Image
 from PIL import ImageDraw
 import numpy as np
 
-from world import EnvironmentGUI
+# World may not be importable, depending on how you have set up your
+# conda/pip/venv environment. Here we try to fix that by forcing the world to
+# be in your python path. If it still doesn't work, come to a tutorial, look up
+# how to fix module import errors, or ask ChatGPT.
+try:
+    from world import EnvironmentGUI
+except ModuleNotFoundError:
+    from os import path
+    from os import pardir
+    import sys
+
+    root_path = path.abspath(path.join(
+        path.join(path.abspath(__file__), pardir), pardir)
+    )
+
+    if root_path not in sys.path:
+        sys.path.append(root_path)
+
+    from world import EnvironmentGUI
 
 
 def draw_base_image(cells: np.ndarray,

@@ -26,7 +26,7 @@ except ModuleNotFoundError:
     )
 
     if root_path not in sys.path:
-        sys.path.extend(root_path)
+        sys.path.append(root_path)
 
     from world import Grid
 
