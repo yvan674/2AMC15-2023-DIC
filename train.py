@@ -18,6 +18,7 @@ try:
     from agents.null_agent import NullAgent
     from agents.greedy_agent import GreedyAgent
     from agents.random_agent import RandomAgent
+    from agents.value_agent import ValueAgent
 except ModuleNotFoundError:
     from os import path
     from os import pardir
@@ -36,6 +37,7 @@ except ModuleNotFoundError:
     from agents.null_agent import NullAgent
     from agents.greedy_agent import GreedyAgent
     from agents.random_agent import RandomAgent
+    from agents.value_agent import ValueAgent
 
 
 
@@ -73,9 +75,12 @@ def main(grid_paths: list[Path], no_gui: bool, iters: int, fps: int,
 
         # Set up the agents from scratch for every grid
         # Add your agents here
-        agents = [NullAgent(0),
-                  GreedyAgent(0),
-                  RandomAgent(0)]
+        agents = [
+                  # NullAgent(0),
+                  # GreedyAgent(0),
+                  # RandomAgent(0),
+                  ValueAgent(0, obs, gamma=0.9)
+                  ]
 
         # Iterate through each agent for `iters` iterations
         for agent in agents:
