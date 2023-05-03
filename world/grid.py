@@ -79,7 +79,7 @@ class Grid:
         Returns:
             A Grid object from the file.
         """
-        arr = np.load(fp)
+        arr = np.load(fp, allow_pickle=True)
         g = Grid(arr.shape[0], arr.shape[1])
         g.cells = arr
 

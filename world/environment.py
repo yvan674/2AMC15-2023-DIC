@@ -244,7 +244,7 @@ class Environment:
                 raise ValueError(f"Number of agents {self.n_agents} does not "
                                  f"agree with number of starting positions "
                                  f"{len(self.agent_start_pos)}.")
-
+        self.agent_done = [False] * self.n_agents
         self.grid = Grid.load_grid_file(self.grid_fp)
         self._initialize_agent_pos()
         self.info = self._reset_info()
@@ -503,9 +503,11 @@ class Environment:
 
             if terminated:
                 break
+
+        summed_dirt = env.grid.sum_dirt()
         obs, info, world_stats = env.reset()
 
-        world_stats["dirt_remaining"] = env.grid.sum_dirt()
+        world_stats["dirt_remaining"] = summed_dirt
 
         # Generate path images
         path_images = visualize_path(initial_grid, agent_paths)
@@ -530,8 +532,8 @@ class Environment:
 
 if __name__ == '__main__':
     # This is sample code to test a single grid.
-    base_grid_fp = Path("../grid_configs/room-1.grd")
-    envi = Environment(base_grid_fp, False, 1, target_fps=-1)
+    base_grid_fp = Path("../grid_configs/testroom.grd")
+    envi = Environment(base_grid_fp, False, 1, target_fps=5)
     observe, inf = envi.get_observation()
 
     # Load the random agent
