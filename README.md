@@ -8,7 +8,7 @@ This is the repository containing the challenge environment code.
 1. Create an agent which inherits from the `BaseAgent` class
 2. Add the agents you want to test to `train.py`
    - There are 2 places to add you agent. Look for the comment `# Add your agent here` for where to add your agent.
-3. Run `$ python train.py grid_configs/rooms-1.grd results/` to start training!
+3. Run `$ python train.py grid_configs/rooms-1.grd --out results/` to start training!
 
 `train.py` is just an example training script. 
 Feel free to modify it as necessary.
@@ -126,7 +126,7 @@ The main interaction with `Environment` is through the methods:
 
 Explanations for each of these methods and how to use them can be found in the examples in the `environment.py` files and in the documentation in the code itself.
 
-[^1]: In case you missed it, this sentence is a joke.
+[^1]: In case you missed it, this sentence is a joke. Please do not write all your code in the `Environment` class.
 
 #### The Grid
 

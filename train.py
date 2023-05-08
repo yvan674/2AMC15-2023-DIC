@@ -41,37 +41,23 @@ except ModuleNotFoundError:
 
 def parse_args():
     p = ArgumentParser(description="DIC Reinforcement Learning Trainer.")
-    p.add_argument(
-        "GRID",
-        type=Path,
-        nargs="+",
-        help="Paths to the grid file to use. There can be more than " "one.",
-    )
-    p.add_argument(
-        "--no_gui", action="store_true", help="Disables rendering to train faster"
-    )
-    p.add_argument(
-        "--sigma",
-        type=float,
-        default=0.0,
-        help="Sigma value for the stochasticity of the environment.",
-    )
-    p.add_argument(
-        "--fps",
-        type=int,
-        default=30,
-        help="Frames per second to render at. Only used if " "no_gui is not set.",
-    )
-    p.add_argument(
-        "--iter", type=int, default=1000, help="Number of iterations to go through."
-    )
-    p.add_argument(
-        "--random_seed",
-        type=int,
-        default=0,
-        help="Random seed value for the environment.",
-    )
-    p.add_argument("--out", type=Path, help="Where to save training results.")
+
+    p.add_argument("GRID", type=Path, nargs="+",
+                   help="Paths to the grid file to use. There can be more than "
+                        "one.")
+    p.add_argument("--no_gui", action="store_true",
+                   help="Disables rendering to train faster")
+    p.add_argument("--sigma", type=float, default=0.,
+                   help="Sigma value for the stochasticity of the environment.")
+    p.add_argument("--fps", type=int, default=30,
+                   help="Frames per second to render at. Only used if "
+                        "no_gui is not set.")
+    p.add_argument("--iter", type=int, default=1000,
+                   help="Number of iterations to go through.")
+    p.add_argument("--random_seed", type=int, default=0,
+                   help="Random seed value for the environment.")
+    p.add_argument("--out", type=Path, default=Path("results/"),
+                   help="Where to save training results.")
 
     return p.parse_args()
 

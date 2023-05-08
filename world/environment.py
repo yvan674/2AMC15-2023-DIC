@@ -558,7 +558,7 @@ class Environment:
 
 if __name__ == "__main__":
     # This is sample code to test a single grid.
-    base_grid_fp = Path("../grid_configs/testroom.grd")
+    base_grid_fp = Path("../grid_configs/rooms-1.grd")
     envi = Environment(base_grid_fp, False, 1, target_fps=5)
     observe, inf = envi.get_observation()
 
