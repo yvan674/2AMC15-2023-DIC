@@ -126,7 +126,7 @@ The main interaction with `Environment` is through the methods:
 
 Explanations for each of these methods and how to use them can be found in the examples in the `environment.py` files and in the documentation in the code itself.
 
-[^1]: In case you missed it, this sentence is a joke.
+[^1]: In case you missed it, this sentence is a joke. Please do not write all your code in the `Environment` class.
 
 #### The Grid
 
