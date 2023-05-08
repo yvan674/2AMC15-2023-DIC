@@ -55,7 +55,7 @@ def parse_args():
                    help="Number of iterations to go through.")
     p.add_argument("--random_seed", type=int, default=0,
                    help="Random seed value for the environment.")
-    p.add_argument("--out", type=Path,
+    p.add_argument("--out", type=Path, default=Path("results/"),
                    help="Where to save training results.")
 
     return p.parse_args()
