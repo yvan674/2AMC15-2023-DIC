@@ -148,3 +148,5 @@ Because of this, we recommend using it only while testing/debugging and not whil
 - flask ~= 2.2
 - flask-socketio ~= 5.3
 - pillow ~= 9.4
+- colorcet ~=3.0
+
