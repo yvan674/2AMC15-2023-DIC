@@ -49,7 +49,7 @@ class Environment:
         agent_start_pos: list[tuple[int, int]] = None,
         reward_fn: callable = None,
         target_fps: int = 30,
-        random_seed: int | float | str | bytes | bytearray | None = 0,
+        random_seed: int | float | str | bytes | bytearray | None = 0
     ):
         """Creates the grid environment for the robot vacuum.
 
@@ -110,12 +110,13 @@ class Environment:
             warn("No reward function provided. Using default reward.")
             self.reward_fn = self._default_reward_function
         else:
-            self.reward_fn = reward_fn
+            self.reward_fn = self._custom_reward_function
         self.info = self._reset_info()
         self.world_stats = self._reset_world_stats()
 
         self.environment_ready = False
         self.reset()
+
 
     def _reset_info(self) -> dict:
         """Resets the info dictionary.
@@ -417,7 +418,7 @@ class Environment:
             self._move_agent(new_pos, i)
 
         # Update the grid with the new agent positions and calculate the reward
-        reward = self.reward_fn(self.grid, self.info)
+        reward = self.reward_fn(self, self.grid, self.info)
         terminal_state = sum(self.agent_done) == self.n_agents
         if terminal_state:
             self.environment_ready = False
@@ -451,6 +452,41 @@ class Environment:
             action.
         """
         return float(sum(info["dirt_cleaned"]))
+
+
+
+
+    @staticmethod
+    def _custom_reward_function(self, grid: Grid, info: dict) -> float:
+        """This is the custom reward function.
+
+        Args:
+            grid: The grid the agent is moving on, in case that is needed by
+                the reward function.
+            info: The world info, in case that is needed by the reward function.
+
+        Returns:
+            A single floating point value representing the reward for a given
+            action.
+        """
+        dirt_reward = sum(info["dirt_cleaned"])
+
+        if info["agent_moved"] == False:
+            bumped_reward = -1
+        else:
+            bumped_reward = 0
+
+        if self.world_stats["total_dirt_cleaned"] == grid.sum_dirt() and info["agent_charging"]:
+            charging_reward = 2
+        else:
+            charging_reward = 0
+
+        total_reward = dirt_reward + bumped_reward + charging_reward
+        
+        return total_reward
+
+
+
 
     @staticmethod
     def evaluate_agent(
