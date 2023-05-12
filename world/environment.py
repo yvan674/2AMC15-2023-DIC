@@ -471,15 +471,20 @@ class Environment:
         """
         dirt_reward = sum(info["dirt_cleaned"])
 
-        if info["agent_moved"] == False:
+        if info["agent_moved"] == [False] and info["agent_charging"][0] != True:
             bumped_reward = -1
         else:
             bumped_reward = 0
 
-        if self.world_stats["total_dirt_cleaned"] == grid.sum_dirt() and info["agent_charging"]:
+        if grid.sum_dirt() == 0 and info["agent_charging"][0]:
             charging_reward = 2
         else:
             charging_reward = 0
+
+        # print(grid.sum_dirt(), info["agent_charging"][0])
+        # print('DIRT REWARD:', dirt_reward)
+        # print('BUMPED REWARD:', bumped_reward)
+        # print('CHARGING REWARD:', charging_reward)
 
         total_reward = dirt_reward + bumped_reward + charging_reward
         
