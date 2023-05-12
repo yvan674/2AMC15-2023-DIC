@@ -31,6 +31,34 @@ class QLearnAgent(BaseAgent):
     def process_reward(self, observation: np.ndarray, reward: float):
         pass
 
+    def reward_func(self, observation, state):
+        if observation[state[0], state[1]] in [1, 2]:
+            return -1000
+
+        if state[2] != 15:
+            if observation[state[0], state[1]] == 3:
+                return 5
+            else:
+                return 0
+        else:
+            if observation[state[0], state[1]] == 4:
+                return 50
+            else:
+                return 0
+
+    def get_new_pos(self, observation, action, state):
+        action_map = {0: [state[0], state[1] - 1, state[2]],  # down
+                      1: [state[0], state[1] + 1, state[2]],  # up
+                      2: [state[0] - 1, state[1], state[2]],  # left
+                      3: [state[0], state[1] + 1, state[2]],  # right
+                      }
+        new_state = action_map.get(action, state)
+
+        if observation[new_state[0], new_state[1]] in [1, 2]:
+            return state
+        else:
+            return new_state
+
     # TODO: Dirt check function
     def dirt_function(self, observation: np.ndarray, state):
         #check which quarter
@@ -116,7 +144,11 @@ class QLearnAgent(BaseAgent):
     def take_action(self, observation: np.ndarray, info: None | dict) -> int:
 
         if self.Q is None:
-            self.Q = np.zeros([observation.shape[0], observation.shape[1], 2 ** 4, 5])
+            self.Q = np.zeros([observation.shape[0], observation.shape[1], 2 ** 4, 4])
+            self.Q[:, 0, :, :] = -10000  # first column we don't want to visit
+            self.Q[:, -1, :, :] = -10000  # last column we don't want to visit
+            self.Q[0, :, :, :] = -10000  # first row we don't want to visit
+            self.Q[-1, :, :, :] = -10000  # last row we don't want to visit
 
         state = info['agent_pos']
         print(observation.shape[1])
@@ -125,31 +157,21 @@ class QLearnAgent(BaseAgent):
         # take action according to epsilon greedy
         if np.random.uniform(0, 1) < self.epsilon:
             action = np.random.randint(0, 4)
+            if state[0]== 1 and action == 0:
         else:
-            action = np.argmax(self.Q[state, :])
+            action = np.argmax(self.Q[state[0], state[1], state[2], :])
+
+        # new state
+        new_state = self.get_new_pos(observation, action, state)
 
         # compute reward
-        reward = 1
-
-        new_state = get_new_state(state)
-        # down
-        if action == 0:
-            new_state = 1
-        # up
-        elif action == 1:
-            new_state =
-
-        # left
-        elif action == 2:
-
-        # right
-        elif action == 3:
-
-        else:
-            new_state =
-
+        reward = self.reward_func(observation, new_state)
 
         # update the Q function
-        self.Q[state, action] += self.alpha * (reward + self.gamma * np.max(self.Q[new_state, :]) - self.Q[state, action])
+        self.Q[state[0], state[1], state[2], action] += \
+            self.alpha * (reward + self.gamma * np.max(self.Q[new_state[0], new_state[1], new_state[2], :]) -
+            self.Q[state[0], state[1], state[2], action])
 
         return action
+
+
