@@ -152,6 +152,7 @@ class Environment:
             "total_agent_moves": 0,
             "total_agents_at_charger": 0,
             "total_failed_moves": 0,
+            "total_reward": 0,
         }
 
     def _initialize_agent_pos(self):
@@ -419,6 +420,8 @@ class Environment:
 
         # Update the grid with the new agent positions and calculate the reward
         reward = self.reward_fn(self, self.grid, self.info)
+        self.world_stats["total_reward"] += reward
+
         terminal_state = sum(self.agent_done) == self.n_agents
         if terminal_state:
             self.environment_ready = False
@@ -432,7 +435,7 @@ class Environment:
         return self.grid.cells, reward, terminal_state, self.info
 
     @staticmethod
-    def _default_reward_function(grid: Grid, info: dict) -> float:
+    def _default_reward_function(self, grid: Grid, info: dict) -> float:
         """This is the default reward function.
 
         This is a very simple default reward function. It simply checks if any
@@ -515,7 +518,7 @@ class Environment:
         agents: list[BaseAgent],
         max_steps: int,
         out_dir: Path,
-        sigma: float = 0.0,
+        sigma: float = 0.0,     #test with 2 values
         agent_start_pos: list[tuple[int, int]] = None,
         random_seed: int | float | str | bytes | bytearray = 0,
         show_images: bool = False,
