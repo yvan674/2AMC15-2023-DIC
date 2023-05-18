@@ -152,6 +152,9 @@ class Environment:
             "total_agent_moves": 0,
             "total_agents_at_charger": 0,
             "total_failed_moves": 0,
+            "steps_per_dirt":0,
+            "failed_moves_fraction":0,
+            "total_reward":0
         }
 
     def _initialize_agent_pos(self):
@@ -419,6 +422,10 @@ class Environment:
 
         # Update the grid with the new agent positions and calculate the reward
         reward = self.reward_fn(self.grid, self.info)
+
+        # Get total reward
+        self.world_stats["total_reward"] += reward
+
         terminal_state = sum(self.agent_done) == self.n_agents
         if terminal_state:
             self.environment_ready = False
@@ -556,6 +563,7 @@ class Environment:
             agent_start_pos=agent_start_pos,
             target_fps=-1,
             random_seed=random_seed,
+            reward_fn='custom'
         )
         obs, info = env.get_observation()
 
@@ -583,6 +591,10 @@ class Environment:
         obs, info, world_stats = env.reset()
 
         world_stats["dirt_remaining"] = summed_dirt
+
+        # Get custom evaluation metrics
+        world_stats["steps_per_dirt"] = (world_stats["total_agent_moves"] + world_stats["total_failed_moves"]) / world_stats["total_dirt_cleaned"]
+        world_stats["failed_moves_fraction"] = world_stats["total_failed_moves"] / (world_stats["total_agent_moves"] + world_stats["total_failed_moves"])
 
         # Generate path images
         path_images = visualize_path(initial_grid, agent_paths)
