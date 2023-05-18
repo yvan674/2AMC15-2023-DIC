@@ -439,7 +439,7 @@ class Environment:
         return self.grid.cells, reward, terminal_state, self.info
 
     @staticmethod
-    def _default_reward_function(grid: Grid, info: dict) -> float:
+    def _default_reward_function(self, grid: Grid, info: dict) -> float:
         """This is the default reward function.
 
         This is a very simple default reward function. It simply checks if any
@@ -488,7 +488,15 @@ class Environment:
         else:
             moving_reward = 0
 
+        if info["agent_moved"] == [True] and dirt_reward == 0:
+            moving_reward = -1
+        else:
+            moving_reward = 0
+
         if grid.sum_dirt() == 0 and info["agent_charging"][0]:
+            charging_reward = 10
+        elif info["agent_charging"][0]:
+            charging_reward = -1
             charging_reward = 10
         elif info["agent_charging"][0]:
             charging_reward = -1
@@ -514,7 +522,7 @@ class Environment:
         agents: list[BaseAgent],
         max_steps: int,
         out_dir: Path,
-        sigma: float = 0.0,
+        sigma: float = 0.0,     #test with 2 values
         agent_start_pos: list[tuple[int, int]] = None,
         random_seed: int | float | str | bytes | bytearray = 0,
         show_images: bool = False,
@@ -619,7 +627,7 @@ class Environment:
 
 if __name__ == "__main__":
     # This is sample code to test a single grid.
-    base_grid_fp = Path("../grid_configs/rooms-1.grd")
+    base_grid_fp = Path("grid_configs/rooms-1.grd")
     envi = Environment(base_grid_fp, False, 1, target_fps=5)
     observe, inf = envi.get_observation()
 
