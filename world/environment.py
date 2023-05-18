@@ -460,7 +460,7 @@ class Environment:
 
 
     @staticmethod
-    def _custom_reward_function(self, grid: Grid, info: dict) -> float:
+    def _custom_reward_function(grid: Grid, info: dict) -> float:
         """This is the custom reward function.
 
         Args:
@@ -472,7 +472,7 @@ class Environment:
             A single floating point value representing the reward for a given
             action.
         """
-        dirt_reward = sum(info["dirt_cleaned"])*5*5
+        dirt_reward = sum(info["dirt_cleaned"]) * 5
 
         if info["agent_moved"] == [False] and info["agent_charging"][0] != True:
             bumped_reward = -1
