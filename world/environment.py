@@ -418,7 +418,7 @@ class Environment:
             self._move_agent(new_pos, i)
 
         # Update the grid with the new agent positions and calculate the reward
-        reward = self.reward_fn(self, self.grid, self.info)
+        reward = self.reward_fn(self.grid, self.info)
         terminal_state = sum(self.agent_done) == self.n_agents
         if terminal_state:
             self.environment_ready = False
@@ -457,7 +457,7 @@ class Environment:
 
 
     @staticmethod
-    def _custom_reward_function(self, grid: Grid, info: dict) -> float:
+    def _custom_reward_function(grid: Grid, info: dict) -> float:
         """This is the custom reward function.
 
         Args:
@@ -469,7 +469,7 @@ class Environment:
             A single floating point value representing the reward for a given
             action.
         """
-        dirt_reward = sum(info["dirt_cleaned"])*5
+        dirt_reward = sum(info["dirt_cleaned"]) * 5
 
         if info["agent_moved"] == [False] and info["agent_charging"][0] != True:
             bumped_reward = -1
