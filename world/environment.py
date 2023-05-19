@@ -439,7 +439,7 @@ class Environment:
         return self.grid.cells, reward, terminal_state, self.info
 
     @staticmethod
-    def _default_reward_function(self, grid: Grid, info: dict) -> float:
+    def _default_reward_function(grid: Grid, info: dict) -> float:
         """This is the default reward function.
 
         This is a very simple default reward function. It simply checks if any
@@ -488,15 +488,7 @@ class Environment:
         else:
             moving_reward = 0
 
-        if info["agent_moved"] == [True] and dirt_reward == 0:
-            moving_reward = -1
-        else:
-            moving_reward = 0
-
         if grid.sum_dirt() == 0 and info["agent_charging"][0]:
-            charging_reward = 10
-        elif info["agent_charging"][0]:
-            charging_reward = -1
             charging_reward = 10
         elif info["agent_charging"][0]:
             charging_reward = -1
